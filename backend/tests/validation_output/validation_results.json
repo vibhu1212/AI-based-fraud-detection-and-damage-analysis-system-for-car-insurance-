@@ -1,0 +1,242 @@
+[
+  {
+    "image": "0181_JPEG.rf.8e69fed2163f67e0477c84af679820fa.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 211.07628851888182,
+        "brightness": 129.64902099609375,
+        "reflection_ratio": 0.04466796875,
+        "bright_pixel_ratio": 0.007919921875,
+        "edge_density": 0.098466796875
+      }
+    },
+    "system_result": {
+      "blur_score": 211.07628851888182,
+      "exposure_score": 129.64902099609375,
+      "glare_score": 0.11357950297069506,
+      "reflection_ratio": 0.04466796875,
+      "failure_reasons": []
+    }
+  },
+  {
+    "image": "0176_JPEG.rf.70028df00a07eae0df1e03949e71a509.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 490.1999066537617,
+        "brightness": 124.57885986328125,
+        "reflection_ratio": 0.1901416015625,
+        "bright_pixel_ratio": 0.0837841796875,
+        "edge_density": 0.12388427734375
+      }
+    },
+    "system_result": {
+      "blur_score": 490.1999066537617,
+      "exposure_score": 124.57885986328125,
+      "glare_score": 0.17896720107331565,
+      "reflection_ratio": 0.1901416015625,
+      "failure_reasons": []
+    }
+  },
+  {
+    "image": "0171_JPEG.rf.b96d49eb305ac8072f4cfc9850b6e998.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 234.32439446923735,
+        "brightness": 54.83230712890625,
+        "reflection_ratio": 0.0716162109375,
+        "bright_pixel_ratio": 0.03419677734375,
+        "edge_density": 0.04701171875
+      }
+    },
+    "system_result": {
+      "blur_score": 234.32439446923735,
+      "exposure_score": 54.83230712890625,
+      "glare_score": 0.12727851434938794,
+      "reflection_ratio": 0.0716162109375,
+      "failure_reasons": []
+    }
+  },
+  {
+    "image": "0146_JPEG.rf.47f3ef674c6460f70d331ecaa5558249.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 253.64967275083072,
+        "brightness": 111.85821044921875,
+        "reflection_ratio": 0.137421875,
+        "bright_pixel_ratio": 0.07904052734375,
+        "edge_density": 0.07821044921875
+      }
+    },
+    "system_result": {
+      "blur_score": 253.64967275083072,
+      "exposure_score": 111.85821044921875,
+      "glare_score": 0.18573712716141644,
+      "reflection_ratio": 0.137421875,
+      "failure_reasons": []
+    }
+  },
+  {
+    "image": "Car-damages-1067_jpg.rf.9807f3076b3d10806885b9a1c8b56940.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 1765.825299411644,
+        "brightness": 94.27985204325898,
+        "reflection_ratio": 0.07835280075027709,
+        "bright_pixel_ratio": 0.03664815021281898,
+        "edge_density": 0.16902221318625105
+      }
+    },
+    "system_result": {
+      "blur_score": 1765.825299411644,
+      "exposure_score": 94.27985204325898,
+      "glare_score": 0.09286857798194817,
+      "reflection_ratio": 0.07835280075027709,
+      "failure_reasons": []
+    }
+  },
+  {
+    "image": "Car-damages-322_png.rf.cbcb4fc5dd0d9d711a8ce2cfca7600c7.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 187.51982222653925,
+        "brightness": 114.90800834050984,
+        "reflection_ratio": 0.05354561045444843,
+        "bright_pixel_ratio": 0.013719991461807888,
+        "edge_density": 0.06451066800838257
+      }
+    },
+    "system_result": {
+      "blur_score": 187.51982222653925,
+      "exposure_score": 114.90800834050984,
+      "glare_score": 0.12823435160135574,
+      "reflection_ratio": 0.05354561045444843,
+      "failure_reasons": []
+    }
+  },
+  {
+    "image": "Car-damages-259_png.rf.fb2039135a1f2ae78c5790ca4f6e7438.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 445.9141859186581,
+        "brightness": 134.79343733809222,
+        "reflection_ratio": 0.061604241133341356,
+        "bright_pixel_ratio": 0.011376327316687687,
+        "edge_density": 0.17046278803230044
+      }
+    },
+    "system_result": {
+      "blur_score": 445.9141859186581,
+      "exposure_score": 134.79343733809222,
+      "glare_score": 0.09248179654080838,
+      "reflection_ratio": 0.061604241133341356,
+      "failure_reasons": []
+    }
+  },
+  {
+    "image": "Car-damages-210_png.rf.011dd480fa8961e82b0e7873f6a57b0b.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 482.26205914821844,
+        "brightness": 136.14296935712596,
+        "reflection_ratio": 0.24835411591464654,
+        "bright_pixel_ratio": 0.15528599527024337,
+        "edge_density": 0.16056664914129154
+      }
+    },
+    "system_result": {
+      "blur_score": 482.26205914821844,
+      "exposure_score": 136.14296935712596,
+      "glare_score": 0.2776309230422702,
+      "reflection_ratio": 0.24835411591464654,
+      "failure_reasons": []
+    }
+  },
+  {
+    "image": "rear_bumber-23-_jpg.rf.5bdb03602b1e39c149c2d04b1732bb0f.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 336.50761120138174,
+        "brightness": 142.31989990234376,
+        "reflection_ratio": 0.1145263671875,
+        "bright_pixel_ratio": 0.10806396484375,
+        "edge_density": 0.04932373046875
+      }
+    },
+    "system_result": {
+      "blur_score": 336.50761120138174,
+      "exposure_score": 142.31989990234376,
+      "glare_score": 0.2017953867087775,
+      "reflection_ratio": 0.1145263671875,
+      "failure_reasons": []
+    }
+  },
+  {
+    "image": "body_pannel-6-_jpg.rf.b2427d95bf0d9fbd14833ce218361669.jpg",
+    "system_pass": true,
+    "expected_pass": true,
+    "matches": true,
+    "visual_analysis": {
+      "expected_pass": true,
+      "issues": [],
+      "metrics": {
+        "blur_score": 961.1189296540978,
+        "brightness": 110.024326171875,
+        "reflection_ratio": 0.0605126953125,
+        "bright_pixel_ratio": 0.02486083984375,
+        "edge_density": 0.2246728515625
+      }
+    },
+    "system_result": {
+      "blur_score": 961.1189296540978,
+      "exposure_score": 110.024326171875,
+      "glare_score": 0.08703122461089985,
+      "reflection_ratio": 0.0605126953125,
+      "failure_reasons": []
+    }
+  }
+]

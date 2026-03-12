@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Model weights (download separately)
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.h5
+*.pb
+*.safetensors
+
+# Databases
+*.db
+*.db-journal
+*.sqlite3
+*.backup
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+.next/
+dist/
+
+# Training artifacts
+runs/
+outputs/
+checkpoints/
+wandb/
+mlruns/
+
+# Storage & uploads
+storage/
+uploads/
+
+# Data (too large for git)
+datasets/
+data/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Build artifacts
+*.desktop
+
+# Configuration (IDE-specific)
+.pyre_configuration
+pyrightconfig.json
+.kiro/

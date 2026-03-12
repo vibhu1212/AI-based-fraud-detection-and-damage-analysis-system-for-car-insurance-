@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Claim Survey Report</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+        
+        .report-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 5px;
+        }
+        
+        .report-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e40af;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            padding: 10px;
+            background-color: #f9fafb;
+            border-radius: 4px;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .risk-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .risk-red {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .risk-amber {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .risk-green {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th {
+            background-color: #f3f4f6;
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            background-color: #f9fafb;
+        }
+        
+        .total-row td {
+            padding: 15px 12px;
+            font-size: 16px;
+            border-top: 2px solid #2563eb;
+        }
+        
+        .amount {
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            font-size: 11px;
+            color: #6b7280;
+        }
+        
+        .signature-section {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        
+        .signature-box {
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+        
+        .signature-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .notes-box {
+            background-color: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .notes-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        .ai-indicator {
+            font-size: 11px;
+            color: #6b7280;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">INSURAI</div>
+        <div class="report-title">Vehicle Insurance Claim Survey Report</div>
+        <div class="report-subtitle">Generated on {{ report_date }}</div>
+    </div>
+
+    <!-- Claim Summary Section -->
+    <div class="section">
+        <div class="section-title">Claim Summary</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Claim Number</div>
+                <div class="info-value">{{ claim.claim_number }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                    <span class="status-badge status-{{ claim.status|lower }}">{{ claim.status }}</span>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Policy Number</div>
+                <div class="info-value">{{ claim.policy.policy_number }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Risk Level</div>
+                <div class="info-value">
+                    <span class="risk-badge risk-{{ claim.risk_level|lower }}">{{ claim.risk_level }}</span>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Customer Name</div>
+                <div class="info-value">{{ claim.customer.full_name }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Customer Email</div>
+                <div class="info-value">{{ claim.customer.email }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Vehicle</div>
+                <div class="info-value">{{ claim.vehicle_make }} {{ claim.vehicle_model }} ({{ claim.vehicle_year }})</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">VIN</div>
+                <div class="info-value">{{ claim.vin or 'N/A' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Incident Date</div>
+                <div class="info-value">{{ claim.incident_date.strftime('%Y-%m-%d') if claim.incident_date else 'N/A' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Submitted Date</div>
+                <div class="info-value">{{ claim.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+            </div>
+        </div>
+        
+        {% if claim.incident_description %}
+        <div class="notes-box">
+            <div class="notes-title">Incident Description</div>
+            <div>{{ claim.incident_description }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Damage Assessment Section -->
+    <div class="section">
+        <div class="section-title">Damage Assessment</div>
+        <p class="ai-indicator">AI-detected damages with surveyor verification and modifications</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Damage Type</th>
+                    <th>Severity</th>
+                    <th>Affected Part</th>
+                    <th>Confidence</th>
+                    <th>Source</th>
+                    <th class="amount">Estimated Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for damage in damages %}
+                <tr>
+                    <td>{{ damage.damage_type }}</td>
+                    <td>{{ damage.severity or 'N/A' }}</td>
+                    <td>{{ damage.affected_part or 'N/A' }}</td>
+                    <td>{{ (damage.confidence * 100)|round(1) if damage.confidence else 'N/A' }}%</td>
+                    <td>{{ 'Manual' if damage.is_surveyor_confirmed and not damage.is_ai_detected else 'AI' }}</td>
+                    <td class="amount">${{ '{:,.2f}'.format(damage.estimated_cost or 0) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ICVE Cost Breakdown Section -->
+    {% if icve %}
+    <div class="section">
+        <div class="section-title">ICVE Cost Breakdown</div>
+        <p class="ai-indicator">Instant Claim Value Estimate - AI-calculated with surveyor adjustments</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Line Item</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th class="amount">Unit Price</th>
+                    <th class="amount">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if icve.line_items %}
+                {% for item in icve.line_items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.item_name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td class="amount">${{ '{:,.2f}'.format(item.unit_price or 0) }}</td>
+                    <td class="amount">${{ '{:,.2f}'.format(item.amount or 0) }}</td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #666;">
+                        No line items available
+                    </td>
+                </tr>
+                {% endif %}
+                
+                <tr>
+                    <td colspan="4" style="text-align: right; font-weight: 600;">Parts Subtotal:</td>
+                    <td class="amount">${{ '{:,.2f}'.format(icve.parts_subtotal or 0) }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="text-align: right; font-weight: 600;">Labour Subtotal:</td>
+                    <td class="amount">${{ '{:,.2f}'.format(icve.labour_subtotal or 0) }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="text-align: right; font-weight: 600;">Tax/GST:</td>
+                    <td class="amount">${{ '{:,.2f}'.format(icve.tax_total or 0) }}</td>
+                </tr>
+                {% if icve.deductible_amount and icve.deductible_amount > 0 %}
+                <tr>
+                    <td colspan="4" style="text-align: right; font-weight: 600;">Deductible:</td>
+                    <td class="amount">-${{ '{:,.2f}'.format(icve.deductible_amount) }}</td>
+                </tr>
+                {% endif %}
+                {% if icve.depreciation_amount and icve.depreciation_amount > 0 %}
+                <tr>
+                    <td colspan="4" style="text-align: right; font-weight: 600;">Depreciation:</td>
+                    <td class="amount">-${{ '{:,.2f}'.format(icve.depreciation_amount) }}</td>
+                </tr>
+                {% endif %}
+                <tr class="total-row">
+                    <td colspan="4" style="text-align: right;">TOTAL ESTIMATE:</td>
+                    <td class="amount">${{ '{:,.2f}'.format(icve.total_estimate or 0) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="section">
+        <div class="section-title">ICVE Cost Breakdown</div>
+        <p>Cost estimate not available.</p>
+    </div>
+    {% endif %}
+
+    <!-- Surveyor Decision Section -->
+    <div class="section">
+        <div class="section-title">Surveyor Decision</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Surveyor Name</div>
+                <div class="info-value">{{ surveyor.full_name }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Decision Date</div>
+                <div class="info-value">{{ decision_date.strftime('%Y-%m-%d %H:%M') }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Decision</div>
+                <div class="info-value">
+                    <span class="status-badge status-{{ claim.status|lower }}">{{ claim.status }}</span>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Approved Amount</div>
+                <div class="info-value">${{ '{:,.2f}'.format(approved_amount) }}</div>
+            </div>
+        </div>
+        
+        {% if decision_reason %}
+        <div class="notes-box">
+            <div class="notes-title">Decision Notes</div>
+            <div>{{ decision_reason }}</div>
+        </div>
+        {% endif %}
+        
+        {% if report_sections %}
+        <div style="margin-top: 20px;">
+            <h3 style="font-size: 16px; margin-bottom: 10px;">Survey Report</h3>
+            {% for section in report_sections %}
+            <div style="margin-bottom: 15px;">
+                <h4 style="font-size: 14px; color: #1e40af; margin-bottom: 5px;">{{ section.title }}</h4>
+                <p style="font-size: 13px; line-height: 1.6;">{{ section.content }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-label">Surveyor Signature</div>
+            <div style="margin-top: 5px; font-weight: 600;">{{ surveyor.full_name }}</div>
+            <div style="font-size: 11px; color: #666;">{{ decision_date.strftime('%Y-%m-%d') }}</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-label">Authorized By</div>
+            <div style="margin-top: 5px; font-weight: 600;">INSURAI Claims Department</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p><strong>INSURAI</strong> - Instant Claims, Verified Results</p>
+        <p>This report was generated using AI-powered damage detection and surveyor verification. All estimates are subject to final inspection and approval.</p>
+        <p>Report ID: {{ claim.id }} | Generated: {{ report_date }}</p>
+    </div>
+</body>
+</html>

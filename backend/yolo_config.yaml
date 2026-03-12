@@ -1,0 +1,95 @@
+# Car Damage Detection Configuration
+
+# Dataset Configuration
+dataset:
+  name: "car_damage_multiclass"
+  kaggle_dataset: "anujms/car-damage-detection"
+  path: "data/car_parts_multiclass/data.yaml"  # Multi-class dataset with 8 classes
+  train: "train"
+  val: "validation"
+  
+# YOLOv8 Training Configuration
+training:
+  model: "yolov8m.pt"  # Options: yolov8n, yolov8s, yolov8m, yolov8l, yolov8x
+  epochs: 12
+  batch_size: 16
+  img_size: 640
+  patience: 10
+  device: 0  # 0 for GPU, 'cpu' for CPU
+  workers: 8
+  
+# Model Classes (car parts with damage types)
+classes:
+  - "bumper_dent"
+  - "bumper_scratch"
+  - "door_dent"
+  - "door_scratch"
+  - "glass_shatter"
+  - "head_lamp"
+  - "tail_lamp"
+  - "unknown"
+  - "grille"
+  - "trunk"
+
+# Damage Severity Thresholds
+damage_severity:
+  low:
+    confidence_min: 0.3
+    confidence_max: 0.5
+    description: "Minor scratches, small dents"
+  medium:
+    confidence_min: 0.5
+    confidence_max: 0.75
+    description: "Visible dents, moderate damage"
+  high:
+    confidence_min: 0.75
+    confidence_max: 1.0
+    description: "Severe damage, major dents or breakage"
+
+# Price Configuration (in INR - Indian Rupees)
+# Prices based on Maruti Suzuki Swift (2024 Model) - Actual Market Prices
+# Includes part cost + labor charges + painting (where applicable)
+prices:
+  bumper_dent:
+    repair_low: 2500        # Minor dent removal + touch-up paint
+    repair_medium: 5000     # Panel beating + full paint
+    repair_high: 8000       # Major dent repair + full bumper paint
+  bumper_scratch:
+    repair_low: 1800        # Touch-up paint for minor scratch
+    repair_medium: 3500     # Scratch removal + paint
+    repair_high: 6000       # Deep scratch repair + full bumper paint
+  door_dent:
+    repair_low: 3500        # Minor dent repair + paint
+    repair_medium: 7500     # Major dent removal + full door paint
+    repair_high: 12000      # Severe dent repair + full door paint
+  door_scratch:
+    repair_low: 2200        # Minor scratch touch-up
+    repair_medium: 4500     # Scratch removal + paint
+    repair_high: 7000       # Deep scratch + full door paint
+  glass_shatter:
+    replace_low: 6000       # Basic windshield replacement
+    replace_medium: 8500    # OEM windshield + installation
+    replace_high: 12000     # Premium windshield + sensor calibration
+  head_lamp:
+    replace_low: 4500       # Aftermarket headlight assembly
+    replace_medium: 7500    # OEM headlight assembly
+    replace_high: 12000     # Premium LED headlight + labor
+  tail_lamp:
+    replace_low: 3500       # Aftermarket tail light
+    replace_medium: 5500    # OEM tail light assembly
+    replace_high: 8000      # Premium LED tail light + labor
+  unknown:
+    repair_low: 2000        # Basic assessment + minor repair
+    repair_medium: 5000     # Standard repair estimate
+    repair_high: 10000      # Major repair estimate
+
+# Parts that can only be replaced (not repaired)
+non_repairable_parts:
+  - "glass_shatter"
+  - "head_lamp"
+  - "tail_lamp"
+
+# Detection Confidence Threshold
+detection:
+  confidence_threshold: 0.01
+  iou_threshold: 0.45
