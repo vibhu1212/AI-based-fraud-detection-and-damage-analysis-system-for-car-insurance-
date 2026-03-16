@@ -127,10 +127,10 @@ The frontend is a **developer/researcher tool** (not a user-facing app) for:
 - **Training**: PyTorch Lightning + DeepSpeed
 
 ### Datasets
-- Custom Indian vehicle dataset (CarDekho scraped + manual)
-- CarDD + COCO-Vehicles (damage/parts)
+- Custom Indian vehicle dataset (Combined from Kaggle and real-world local surveyor data)
+- CarDD + COCO-Vehicles (damage/parts via Kaggle)
 - FaceForensics++ + DEFACTO (fraud)
-- IRDAI OEM parts catalog + labor rates
+- Real surveyor damage estimates and reports
 
 ---
 
@@ -177,15 +177,3 @@ The frontend is a **developer/researcher tool** (not a user-facing app) for:
 4. **Indian Vehicle Specialization** — Custom datasets for 200+ Indian car models with regional pricing
 
 ---
-
-## 📄 License
-
-Research Project — TIH-IoT CHANAKYA Fellowship 2025
-
-## 👥 Team
-
-AI Automated Insurance Survey Agent — CHANAKYA Research Fellows
-
-- Kartikay Singh
-- Anubhav Kumar Singh
-- Abhay Sharma

@@ -35,8 +35,8 @@ flowchart TD
     end
 
     subgraph M0 ["M0 — Privacy & Quality Gate"]
-        QA[🔍 Image Quality Assessor\nOpenCV + Custom CNN\nBlur · Exposure · Resolution]
-        QA --> PII[🔒 PII Masking Engine\nYOLOv8-face + Plate Redactor\nDPDP Act 2023 Compliant]
+        QA[🔍 Image Quality Assessor\nEnhancedQualityGateValidator\nBlur · Exposure · Resolution]
+        QA --> PII[🔒 PII Masking Engine\nYOLO11m person + YOLO11m_plates + Haar cascade\nGaussian blur 99x99 · DPDP Act 2023 Compliant]
     end
 
     subgraph M1 ["M1 — Forensics & Fraud Detection"]
@@ -182,10 +182,12 @@ flowchart TD
 | Attribute | Detail |
 |-----------|--------|
 | **Purpose** | Filter low-quality images; mask PII for DPDP/IRDAI compliance |
-| **Input** | Raw images (JPEG/PNG), metadata |
-| **Output** | `{ quality_score, blur_score, exposure_score, pii_masked: bool, sanitized_image_path }` |
-| **Models** | OpenCV (quality metrics), YOLOv8-face (face detection), Custom CNN (quality scoring) |
+| **Input** | Raw images (JPEG/PNG), `List[UploadFile]` — all images processed per request |
+| **Output** | `{ quality_score, blur_score, exposure_score, passed, pii_found, faces_detected, plates_detected, faces_boxes, plates_boxes, redacted_image_b64 }` |
+| **Models** | `EnhancedQualityGateValidator` (quality), YOLO11m class 0 conf=0.45 (person/face), YOLO11m_plates conf=0.3 + Haar cascade union (plates) |
+| **Redaction** | Gaussian blur 99×99 on top 35% of person bbox (head) and full plate bbox |
 | **Build Type** | Fine-tuned + Custom |
+| **Status** | ✅ Implemented |
 | **Track** | Both Fast and Deep |
 
 ### M1 — Forensics & Fraud Detection
@@ -318,13 +320,15 @@ Post-settlement data flows back:
 ### Core Vision Models
 | Model | Architecture | Build Type | Purpose |
 |-------|-------------|-----------|---------|
-| YOLOv10 / YOLOv10-Nano | YOLO family | Fine-tuned SOTA | Vehicle detection |
-| SegFormer-B5 | Transformer segmentation | Fine-tuned SOTA | Part segmentation |
-| Mask R-CNN | Instance segmentation | Fine-tuned SOTA | Damage detection (SOTA path) |
-| Custom UNet + Attention | UNet variant | From Scratch | Damage detection (research path) |
-| Custom EfficientNet-B4 | EfficientNet | From Scratch | Fraud/forensics |
-| Custom Depth UNet | UNet variant | From Scratch | Monocular depth estimation |
-| Instant-NGP + 3DGS | Neural radiance fields | Existing | 3D reconstruction |
+| YOLO11m | YOLO family | Pre-trained | Person/face detection (M0) |
+| YOLO11m_plates | YOLO family | Fine-tuned | License plate detection (M0) |
+| YOLOv8n | YOLO family | Fine-tuned SOTA | Vehicle detection (M2) |
+| SegFormer-B5 | Transformer segmentation | Fine-tuned SOTA | Part segmentation (M3) |
+| Mask R-CNN | Instance segmentation | Fine-tuned SOTA | Damage detection — SOTA path (M4) |
+| Custom UNet + Attention | UNet variant | From Scratch | Damage detection — research path (M4) |
+| Custom EfficientNet-B4 | EfficientNet | From Scratch | Fraud/forensics (M1) |
+| Custom Depth UNet | UNet variant | From Scratch | Monocular depth estimation (M5) |
+| Instant-NGP + 3DGS | Neural radiance fields | Existing | 3D reconstruction (M5) |
 
 ### Language & Multimodal Models
 - **VLM**: InternVL2-26B / LLaVA-1.6-34B (report generation)
@@ -354,25 +358,21 @@ Post-settlement data flows back:
 Every module exposes a standard REST API:
 
 ```
-POST /api/v1/modules/{module_id}/process
-Content-Type: multipart/form-data | application/json
+POST /api/modules/{module_id}/process
+Content-Type: multipart/form-data
 
 Request:
+  files: List[UploadFile]   # one or more images
+
+Response (single image):
 {
-  "claim_id": "uuid",
-  "images": ["base64 or file paths"],
-  "context": { /* output from previous modules */ },
-  "config": { "track": "fast|full", "enable_rag": true }
+  "module_id": "M0",
+  "filename": "image.jpg",
+  "processing_time_ms": 120,
+  "output": { /* module-specific structured JSON */ }
 }
 
-Response:
-{
-  "module_id": "M0-M7",
-  "status": "success|error|escalation",
-  "output": { /* module-specific structured JSON */ },
-  "metrics": { "inference_time_ms": 0, "confidence": 0.0 },
-  "audit": { "model_version": "", "timestamp": "", "hash": "" }
-}
+Response (multiple images): array of the above objects
 ```
 
 ---
