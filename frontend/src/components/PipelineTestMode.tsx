@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 interface ModuleInfo {
   id: string
@@ -13,10 +13,12 @@ interface Props {
 
 interface PipelineStep {
   moduleId: string
-  status: 'pending' | 'running' | 'completed' | 'skipped'
+  status: 'pending' | 'running' | 'completed' | 'error'
   output?: object
   timeMs?: number
 }
+
+const API_BASE = 'http://localhost:8000/api'
 
 export default function PipelineTestMode({ modules }: Props) {
   const [enabledModules, setEnabledModules] = useState<Set<string>>(
@@ -25,6 +27,8 @@ export default function PipelineTestMode({ modules }: Props) {
   const [track, setTrack] = useState<'fast' | 'full'>('fast')
   const [isRunning, setIsRunning] = useState(false)
   const [steps, setSteps] = useState<PipelineStep[]>([])
+  const [image, setImage] = useState<File | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
 
   const toggleModule = useCallback((id: string) => {
     setEnabledModules(prev => {
@@ -37,47 +41,40 @@ export default function PipelineTestMode({ modules }: Props) {
 
   const applyPreset = useCallback((preset: 'fast' | 'full') => {
     setTrack(preset)
-    if (preset === 'fast') {
-      setEnabledModules(new Set(['M0', 'M2', 'M4', 'M6', 'M7']))
-    } else {
-      setEnabledModules(new Set(modules.map(m => m.id)))
-    }
+    setEnabledModules(preset === 'fast'
+      ? new Set(['M0', 'M2', 'M4', 'M6', 'M7'])
+      : new Set(modules.map(m => m.id))
+    )
   }, [modules])
 
   const runPipeline = useCallback(async () => {
+    if (!image) return
     const orderedModules = modules.filter(m => enabledModules.has(m.id))
-    const initialSteps: PipelineStep[] = orderedModules.map(m => ({
-      moduleId: m.id,
-      status: 'pending' as const,
-    }))
-    setSteps(initialSteps)
+    setSteps(orderedModules.map(m => ({ moduleId: m.id, status: 'pending' as const })))
     setIsRunning(true)
 
     for (let i = 0; i < orderedModules.length; i++) {
-      setSteps(prev => prev.map((s, idx) =>
-        idx === i ? { ...s, status: 'running' } : s
-      ))
+      const mod = orderedModules[i]
+      setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, status: 'running' } : s))
 
-      const delay = 800 + Math.random() * 1500
-      await new Promise(resolve => setTimeout(resolve, delay))
+      const t0 = Date.now()
+      let output: object
+      try {
+        const fd = new FormData()
+        fd.append('file', image)
+        const res = await fetch(`${API_BASE}/modules/${mod.id}/process`, { method: 'POST', body: fd })
+        output = await res.json()
+      } catch (e: unknown) {
+        output = { status: 'error', message: e instanceof Error ? e.message : 'Request failed' }
+      }
 
       setSteps(prev => prev.map((s, idx) =>
-        idx === i ? {
-          ...s,
-          status: 'completed',
-          timeMs: Math.round(delay),
-          output: {
-            module: orderedModules[i].id,
-            status: 'success',
-            confidence: +(0.8 + Math.random() * 0.19).toFixed(2),
-            items_detected: Math.floor(Math.random() * 5) + 1,
-          }
-        } : s
+        idx === i ? { ...s, status: 'completed', timeMs: Date.now() - t0, output } : s
       ))
     }
 
     setIsRunning(false)
-  }, [modules, enabledModules])
+  }, [modules, enabledModules, image])
 
   const totalTime = steps.reduce((sum, s) => sum + (s.timeMs || 0), 0)
   const completedSteps = steps.filter(s => s.status === 'completed').length
@@ -87,6 +84,29 @@ export default function PipelineTestMode({ modules }: Props) {
       <div className="page-header">
         <h2>⚡ Pipeline Test Mode</h2>
         <p>Chain modules together and see data flow step-by-step through the pipeline</p>
+      </div>
+
+      {/* Image Upload */}
+      <div className="card">
+        <div className="card-header">
+          <h3>📤 Input Image</h3>
+          {image && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{image.name}</span>}
+        </div>
+        <div
+          className="upload-zone"
+          onClick={() => fileInput.current?.click()}
+          style={{ padding: '20px', cursor: 'pointer' }}
+        >
+          <div className="upload-icon">📷</div>
+          <h4>{image ? `✅ ${image.name}` : 'Click to upload an image for the pipeline'}</h4>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => e.target.files?.[0] && setImage(e.target.files[0])}
+          />
+        </div>
       </div>
 
       {/* Track Selection */}
@@ -131,7 +151,7 @@ export default function PipelineTestMode({ modules }: Props) {
           <button
             className="btn btn-primary"
             onClick={runPipeline}
-            disabled={isRunning || enabledModules.size === 0}
+            disabled={isRunning || enabledModules.size === 0 || !image}
           >
             {isRunning ? (
               <>

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 
 interface ModuleInfo {
   id: string
@@ -13,107 +13,31 @@ interface Props {
   module: ModuleInfo
 }
 
-// Simulated module outputs for demo
-function getSimulatedOutput(moduleId: string): object {
-  const outputs: Record<string, object> = {
-    M0: {
-      quality_score: 0.92,
-      blur_score: 0.15,
-      exposure_score: 0.88,
-      resolution: [1920, 1080],
-      pii_masked: true,
-      faces_detected: 2,
-      plates_detected: 1,
-      sanitized_image_paths: ['storage/masked_img_001.jpg'],
-      processing_time_ms: 142,
-    },
-    M1: {
-      fraud_score: 0.12,
-      fraud_type: 'none',
-      exif_valid: true,
-      exif_anomalies: [],
-      gan_fingerprint_detected: false,
-      rag_similar_frauds: [],
-      escalation_required: false,
-      processing_time_ms: 891,
-    },
-    M2: {
-      make: 'Maruti Suzuki',
-      model: 'Baleno',
-      year: 2022,
-      trim: 'Zeta',
-      body_type: 'hatchback',
-      segment: 'premium_hatchback',
-      confidence: 0.94,
-      policy_match_verified: true,
-      processing_time_ms: 234,
-    },
-    M3: {
-      parts: [
-        { name: 'front_bumper', bounding_box: [100, 200, 400, 350], confidence: 0.91 },
-        { name: 'left_headlight', bounding_box: [120, 180, 200, 270], confidence: 0.88 },
-        { name: 'hood', bounding_box: [80, 50, 500, 200], confidence: 0.95 },
-        { name: 'left_fender', bounding_box: [30, 150, 120, 400], confidence: 0.87 },
-      ],
-      total_parts_detected: 4,
-      processing_time_ms: 567,
-    },
-    M4: {
-      damages: [
-        { type: 'dent', severity: 'moderate', part: 'front_bumper', area_percentage: 12.5, confidence: 0.87, model_source: 'ensemble', sota_confidence: 0.89, scratch_confidence: 0.85 },
-        { type: 'scratch', severity: 'minor', part: 'left_fender', area_percentage: 3.2, confidence: 0.92, model_source: 'sota', sota_confidence: 0.92, scratch_confidence: 0.78 },
-      ],
-      cross_training_metrics: { sota_map: 0.72, scratch_map: 0.68, consensus_method: 'ensemble' },
-      processing_time_ms: 1243,
-    },
-    M5: {
-      depth_map_path: 'storage/depth_maps/claim_001.png',
-      max_deformation_depth_mm: 8.3,
-      damage_volume_cm3: 42.7,
-      reconstruction_method: 'monocular_unet',
-      point_cloud_vertices: 125840,
-      processing_time_ms: 3421,
-    },
-    M6: {
-      line_items: [
-        { part: 'front_bumper', damage_type: 'dent', repair_cost: 4500, replace_cost: 12000, recommended: 'repair', depreciation_pct: 15, final_cost: 3825, source_citation: 'OEM Catalog #MS-2022-FB-001' },
-        { part: 'left_fender', damage_type: 'scratch', repair_cost: 1800, replace_cost: 6500, recommended: 'repair', depreciation_pct: 15, final_cost: 1530, source_citation: 'OEM Catalog #MS-2022-LF-003' },
-      ],
-      total_estimate: 5355,
-      confidence_bounds: [4500, 6200],
-      currency: 'INR',
-      processing_time_ms: 89,
-    },
-    M7: {
-      report_status: 'generated',
-      report_format: ['PDF', 'JSON'],
-      grad_cam_overlays: 2,
-      citations_count: 8,
-      all_facts_grounded: true,
-      vlm_confidence: 0.91,
-      audit_hash: 'sha256:a8f3c2e1...',
-      processing_time_ms: 4567,
-    },
-  }
-  return outputs[moduleId] || { error: 'Module not configured' }
-}
+const API_BASE = 'http://localhost:8000/api'
 
 export default function ModuleTestPanel({ module }: Props) {
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [result, setResult] = useState<object | null>(null)
+  const [results, setResults] = useState<object[]>([])
+  const [error, setError] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [online, setOnline] = useState<boolean | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  // Check backend connectivity
+  useEffect(() => {
+    fetch(`${API_BASE}/health`)
+      .then(r => setOnline(r.ok))
+      .catch(() => setOnline(false))
+  }, [])
 
   const handleFiles = useCallback((files: FileList) => {
     const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
     setImages(prev => [...prev, ...newFiles])
     newFiles.forEach(file => {
       const reader = new FileReader()
-      reader.onload = (e) => {
-        setPreviews(prev => [...prev, e.target?.result as string])
-      }
+      reader.onload = (e) => setPreviews(prev => [...prev, e.target?.result as string])
       reader.readAsDataURL(file)
     })
   }, [])
@@ -125,26 +49,45 @@ export default function ModuleTestPanel({ module }: Props) {
   }, [handleFiles])
 
   const processModule = useCallback(async () => {
+    if (images.length === 0) return
     setIsProcessing(true)
-    setResult(null)
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 2000))
-    const output = getSimulatedOutput(module.id)
-    setResult(output)
-    setIsProcessing(false)
-  }, [module.id])
+    setResults([])
+    setError(null)
+
+    const formData = new FormData()
+    images.forEach(img => formData.append('files', img))
+
+    try {
+      const res = await fetch(`${API_BASE}/modules/${module.id}/process`, {
+        method: 'POST',
+        body: formData,
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.detail || `HTTP ${res.status}`)
+      setResults(Array.isArray(json) ? json : [json])
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Request failed')
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [images, module.id])
 
   const clearAll = useCallback(() => {
     setImages([])
     setPreviews([])
-    setResult(null)
+    setResults([])
+    setError(null)
   }, [])
 
   return (
     <div className="module-test-panel">
       <div className="page-header">
         <h2>{module.icon} {module.id}: {module.name}</h2>
-        <p>{module.description} · Build: {module.buildType} · Track: {module.track}</p>
+        <p>
+          {module.description} · Build: {module.buildType} · Track: {module.track}
+          &nbsp;&nbsp;
+          {online === null ? '⏳ Checking backend...' : online ? '🟢 Backend Live' : '🔴 Backend Offline'}
+        </p>
       </div>
 
       {/* Upload Zone */}
@@ -178,7 +121,25 @@ export default function ModuleTestPanel({ module }: Props) {
         {previews.length > 0 && (
           <div className="image-preview-grid">
             {previews.map((src, i) => (
-              <img key={i} src={src} alt={`Upload ${i + 1}`} />
+              <div key={i} style={{ position: 'relative', display: 'inline-block' }}>
+                <img src={src} alt={`Upload ${i + 1}`} />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setImages(prev => prev.filter((_, idx) => idx !== i))
+                    setPreviews(prev => prev.filter((_, idx) => idx !== i))
+                    setResults(prev => prev.filter((_, idx) => idx !== i))
+                  }}
+                  style={{
+                    position: 'absolute', top: 4, right: 4,
+                    background: 'rgba(0,0,0,0.65)', color: '#fff',
+                    border: 'none', borderRadius: '50%',
+                    width: 22, height: 22, cursor: 'pointer',
+                    fontSize: 13, lineHeight: '22px', textAlign: 'center', padding: 0,
+                  }}
+                  title="Remove image"
+                >✕</button>
+              </div>
             ))}
           </div>
         )}
@@ -192,10 +153,7 @@ export default function ModuleTestPanel({ module }: Props) {
           disabled={images.length === 0 || isProcessing}
         >
           {isProcessing ? (
-            <>
-              <span className="loading-spinner" />
-              Processing...
-            </>
+            <><span className="loading-spinner" />Processing...</>
           ) : (
             <>▶ Run {module.id}</>
           )}
@@ -205,51 +163,98 @@ export default function ModuleTestPanel({ module }: Props) {
         </span>
       </div>
 
-      {/* Results */}
-      {result && (
-        <div className="results-panel">
+      {/* Error */}
+      {error && (
+        <div className="results-panel" style={{ borderColor: '#ef4444' }}>
           <div className="results-header">
-            <h4>
-              <span className="status-badge ready"><span className="status-dot" /> Success</span>
-              {module.id} Output
-            </h4>
-            <button
-              className="btn btn-secondary"
-              onClick={() => navigator.clipboard.writeText(JSON.stringify(result, null, 2))}
-            >
-              📋 Copy JSON
-            </button>
+            <h4>❌ Error</h4>
           </div>
-
-          {/* Metrics */}
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-            <div className="metrics-grid">
-              {Object.entries(result as Record<string, unknown>)
-                .filter(([, v]) => typeof v === 'number')
-                .slice(0, 4)
-                .map(([key, value]) => (
-                  <div key={key} className="metric-card">
-                    <div className="metric-value">
-                      {typeof value === 'number' && value < 1 && value > 0
-                        ? `${(value as number * 100).toFixed(1)}%`
-                        : key.includes('time') || key.includes('ms')
-                          ? `${value}ms`
-                          : String(value)}
-                    </div>
-                    <div className="metric-label">{key.replace(/_/g, ' ')}</div>
-                  </div>
-                ))}
-            </div>
-          </div>
-
-          {/* JSON Output */}
           <div className="results-body">
-            <div className="json-viewer">
-              {JSON.stringify(result, null, 2)}
-            </div>
+            <div className="json-viewer" style={{ color: '#ef4444' }}>{error}</div>
           </div>
         </div>
       )}
+
+      {/* Results — one card per image */}
+      {results.map((result, idx) => {
+        const r = result as Record<string, unknown>
+        const out = r.output as Record<string, unknown> | undefined
+        const cleanResult = out
+          ? { ...r, output: Object.fromEntries(Object.entries(out).filter(([k]) => k !== 'redacted_image_b64')) }
+          : r
+
+        return (
+          <div key={idx} className="results-panel">
+            <div className="results-header">
+              <h4>
+                <span className="status-badge ready"><span className="status-dot" /> Success</span>
+                {module.id} · {r.filename as string} ({r.processing_time_ms as number}ms)
+              </h4>
+              <button
+                className="btn btn-secondary"
+                onClick={() => navigator.clipboard.writeText(JSON.stringify(cleanResult, null, 2))}
+              >
+                📋 Copy JSON
+              </button>
+            </div>
+
+            {/* PII comparison (M0 only) */}
+            {out?.redacted_image_b64 && (
+              <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>🔒 PII Masking Result</span>
+                  {out.pii_found
+                    ? <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        ⚠️ {out.faces_detected as number} face(s) · {out.plates_detected as number} plate(s) masked
+                      </span>
+                    : <span style={{ background: '#d1fae5', color: '#065f46', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        ✅ No PII detected
+                      </span>
+                  }
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Original</p>
+                    {previews[idx] && <img src={previews[idx]} alt="Original" style={{ width: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Redacted (Gaussian Blur 99×99)</p>
+                    <img
+                      src={`data:image/jpeg;base64,${out.redacted_image_b64 as string}`}
+                      alt="Redacted"
+                      style={{ width: '100%', borderRadius: 8, border: '2px solid #7c3aed' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Metrics */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+              <div className="metrics-grid">
+                {Object.entries(out ?? r)
+                  .filter(([, v]) => typeof v === 'number')
+                  .slice(0, 4)
+                  .map(([key, value]) => (
+                    <div key={key} className="metric-card">
+                      <div className="metric-value">
+                        {typeof value === 'number' && value < 1 && value > 0
+                          ? `${(value * 100).toFixed(1)}%`
+                          : key.includes('time') || key.includes('ms') ? `${value}ms` : String(value)}
+                      </div>
+                      <div className="metric-label">{key.replace(/_/g, ' ')}</div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* JSON */}
+            <div className="results-body">
+              <div className="json-viewer">{JSON.stringify(cleanResult, null, 2)}</div>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

@@ -69,6 +69,12 @@ export default function BenchmarkView() {
         <p>Head-to-head comparison: Mask R-CNN (fine-tuned SOTA) vs Custom UNet + Attention (from scratch)</p>
       </div>
 
+      <div className="card" style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.05)' }}>
+        <div style={{ padding: '12px 16px', color: '#f59e0b', fontSize: 13 }}>
+          ⚠️ <strong>Simulated data</strong> — Real model comparison will be available after M4 training is complete (Phase 2). Numbers below are placeholders.
+        </div>
+      </div>
+
       {/* Controls */}
       <div className="card">
         <div className="card-header">

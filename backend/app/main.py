@@ -5,7 +5,7 @@ P0 Master Locks Enforced: AI Drafts, Human Approves
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import health, auth, claims, surveyor, policies, websocket, audit, profile, storage, icve, vehicle_override
+from app.api import health, auth, claims, surveyor, policies, websocket, audit, profile, storage, icve, vehicle_override, modules
 
 # Initialize FastAPI application
 app = FastAPI(
@@ -41,6 +41,7 @@ app.include_router(vehicle_override.router, tags=["Vehicle"])
 from app.api import metrics, explanations
 app.include_router(metrics.router, prefix="/api", tags=["Metrics"])
 app.include_router(explanations.router, prefix="/api", tags=["Explanations"])
+app.include_router(modules.router, prefix="/api", tags=["Module Testing"])
 
 
 @app.on_event("startup")

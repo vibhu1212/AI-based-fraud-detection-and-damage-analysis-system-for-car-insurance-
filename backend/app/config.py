@@ -19,7 +19,11 @@ class Settings(BaseSettings):
     PORT: int = 8000
     
     # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000", "http://127.0.0.1:3000",
+        "http://localhost:5173", "http://localhost:5174",
+        "http://127.0.0.1:5173", "http://127.0.0.1:5174",
+    ]
     
     # Database
     DATABASE_URL: str = "sqlite:///./insurai.db"
@@ -42,6 +46,8 @@ class Settings(BaseSettings):
     
     # AI/ML
     OPENAI_API_KEY: Optional[str] = None
+    OCR_ENGINE: str = "tesseract"
+    DETECTION_MODEL_PATH: str = "./models/yolov8.pt"
     
     # Surveyor Assignment
     SENIOR_SURVEYOR_IDS: str = ""  # Comma-separated list of senior surveyor user IDs
