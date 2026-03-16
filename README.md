@@ -108,18 +108,22 @@ The frontend is a **developer/researcher tool** (not a user-facing app) for:
 ## 🛠️ Tech Stack
 
 ### Core ML Models
-- **Detection**: YOLOv10 / YOLOv10-Nano (vehicle identification)
-- **Segmentation**: SegFormer-B5, Mask R-CNN (parts + damage)
-- **Research**: Custom UNet + Attention (from-scratch damage detection)
-- **Forensics**: Custom EfficientNet-B4 (fraud/deepfake detection)
-- **3D**: Instant-NGP + 3D Gaussian Splatting, Custom Depth UNet
-- **VLM**: InternVL2 / LLaVA-1.6 (report generation)
+- **M0 — Person detection**: YOLO11m (class 0, conf=0.45) — head/face region blur
+- **M0 — Plate detection**: YOLO11m_plates (conf=0.3) + OpenCV Haar cascade (union for higher recall)
+- **M0 — Quality gate**: Custom `EnhancedQualityGateValidator` (Laplacian blur, exposure, resolution)
+- **M2 — Vehicle ID**: YOLOv8n fine-tuned on Indian vehicles (200+ models)
+- **M4 — Damage analysis**: Mask R-CNN (SOTA) vs Custom UNet + Attention (from scratch) — dual-model benchmarked
+- **M3 — Part segmentation**: SegFormer-B5 fine-tuned (40+ part classes)
+- **M1 — Fraud detection**: Custom EfficientNet-B4 (from scratch)
+- **M5 — 3D depth**: Instant-NGP + 3D Gaussian Splatting (multi-view), Custom Depth UNet (monocular)
+- **M7 — Report generation**: InternVL2 / LLaVA-1.6 (fine-tuned VLM)
 
 ### Infrastructure
 - **Backend**: FastAPI + Celery + Redis
+- **API**: Multi-image endpoint (`List[UploadFile]`) — processes all images, returns per-image results
 - **RAG**: pgvector + BAAI/bge-large embeddings
 - **MLOps**: MLflow, DVC, Evidently AI
-- **Frontend**: Vite + React + TypeScript
+- **Frontend**: Vite + React + TypeScript — per-image result cards with original vs redacted comparison
 - **Training**: PyTorch Lightning + DeepSpeed
 
 ### Datasets
