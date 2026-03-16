@@ -59,8 +59,10 @@ source "${VENV_DIR}/bin/activate"
 
 # Install dependencies if needed
 if [ ! -f "${VENV_DIR}/.deps_installed" ]; then
-    echo -e "  Installing Python dependencies..."
-    pip install -r "${BACKEND_DIR}/requirements.txt" --quiet
+    echo -e "  Installing Python dependencies (this may take a few minutes)..."
+    echo ""
+    pip install -r "${BACKEND_DIR}/requirements.txt"
+    echo ""
     touch "${VENV_DIR}/.deps_installed"
 else
     echo -e "  ${GREEN}✓${NC} Python dependencies already installed"
@@ -83,7 +85,8 @@ FRONTEND_DIR="${PROJECT_DIR}/frontend"
 # Install dependencies if needed
 if [ ! -d "${FRONTEND_DIR}/node_modules" ]; then
     echo -e "  Installing Node.js dependencies..."
-    (cd "$FRONTEND_DIR" && npm install --silent)
+    echo ""
+    (cd "$FRONTEND_DIR" && npm install)
 else
     echo -e "  ${GREEN}✓${NC} Node.js dependencies already installed"
 fi

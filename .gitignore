@@ -85,3 +85,4 @@ data/
 .pyre_configuration
 pyrightconfig.json
 .kiro/
+.agent/
