@@ -139,9 +139,13 @@ class BaseModule(ABC):
   "blur_score": 0.15,
   "exposure_score": 0.88,
   "resolution": [1920, 1080],
-  "pii_masked": true,
+  "passed": true,
+  "pii_found": true,
   "faces_detected": 2,
   "plates_detected": 1,
+  "faces_boxes": [[x, y, w, h]],
+  "plates_boxes": [[x, y, w, h]],
+  "redacted_image_b64": "<base64-jpeg>",
   "sanitized_image_paths": ["path/to/masked_img1.jpg"]
 }
 ```
@@ -333,7 +337,7 @@ graph LR
 | `GET` | `/api/health` | System health + module status |
 | `GET` | `/api/modules` | List all available modules |
 | `GET` | `/api/modules/{id}` | Module info + health |
-| `POST` | `/api/modules/{id}/process` | Run single module |
+| `POST` | `/api/modules/{id}/process` | Run single module (field: `files`, `List[UploadFile]`) — returns array for >1 image |
 | `POST` | `/api/pipeline/run` | Run full/partial pipeline |
 | `POST` | `/api/pipeline/benchmark` | Run SOTA vs Scratch benchmark |
 | `GET` | `/api/pipeline/results/{id}` | Get pipeline run results |

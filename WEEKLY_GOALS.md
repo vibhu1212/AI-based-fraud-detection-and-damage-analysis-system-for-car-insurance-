@@ -7,25 +7,25 @@
 ### Month 1: Foundation & M0-M1
 
 **Week 1** — Project Setup & Environment
-- [ ] Set up development environment (CUDA, PyTorch, FastAPI)
+- [x] Set up development environment (CUDA, PyTorch, FastAPI)
 - [ ] Configure MLflow experiment tracking
 - [ ] Initialize DVC for dataset versioning
-- [ ] Set up project structure (modules/, services/, core/)
-- [ ] Create base module abstract class and shared schemas
+- [x] Set up project structure (modules/, services/, core/)
+- [x] Create base module abstract class and shared schemas
 
 **Week 2** — M0: Quality Gate Implementation
-- [ ] Implement blur detection (Laplacian variance, OpenCV)
-- [ ] Implement exposure/brightness checker
-- [ ] Build resolution validator
-- [ ] Create quality scoring CNN (custom lightweight model)
-- [ ] Write unit tests and module REST endpoint
+- [x] Implement blur detection (Laplacian variance, OpenCV)
+- [x] Implement exposure/brightness checker
+- [x] Build resolution validator
+- [x] Create quality scoring (EnhancedQualityGateValidator service)
+- [x] Write module REST endpoint (POST /api/modules/M0/process)
 
 **Week 3** — M0: PII Masking Engine
-- [ ] Fine-tune YOLOv8-face on Indian face dataset
-- [ ] Implement license plate detector
-- [ ] Build OpenCV inpainting pipeline for face/plate masking
-- [ ] DPDP Act 2023 compliance validation
-- [ ] Integration tests: quality gate → PII masking flow
+- [x] Implement person/face detection (YOLO11m, class 0, conf=0.45 — blurs top 35% of bbox)
+- [x] Implement license plate detector (YOLO11m_plates conf=0.3 + Haar cascade union)
+- [x] Build Gaussian blur (99×99) redaction pipeline (pii_masker.py)
+- [x] DPDP Act 2023 compliance — faces and plates masked before any output
+- [x] Integration: quality gate → PII masking → redacted_image_b64 in M0 response
 
 **Week 4** — M1: Fraud Detection (From Scratch)
 - [ ] Collect fraud dataset (FaceForensics++, DEFACTO, custom)

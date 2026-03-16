@@ -18,13 +18,13 @@
 
 | Deliverable | Status |
 |-------------|--------|
-| Development environment (CUDA, PyTorch, MLflow, DVC) | [ ] |
-| Base module interface + shared Pydantic schemas | [ ] |
-| M0: Image quality assessment (blur, exposure, resolution) | [ ] |
-| M0: PII masking (YOLOv8-face + plate detection) | [ ] |
+| Development environment (CUDA, PyTorch, MLflow, DVC) | [/] |
+| Base module interface + shared Pydantic schemas | [x] |
+| M0: Image quality assessment (blur, exposure, resolution) | [x] |
+| M0: PII masking (YOLO11m person + YOLO11m_plates + Haar cascade) | [x] |
 | M1: Custom EfficientNet-B4 fraud CNN (from scratch) | [ ] |
 | M1: EXIF metadata analyzer | [ ] |
-| Module REST endpoints for M0 and M1 | [ ] |
+| Module REST endpoints for M0 and M1 | [/] |
 
 **🎯 Milestone**: M0 and M1 independently functional with REST APIs
 

@@ -6,8 +6,15 @@ This document outlines the feature specifications for the **AI Automated Insuran
 ## 2. Core Features
 
 ### 2.1 M0: Privacy & Quality Gate
-- **Image Quality Check:** Automatically rejects or flags images with low resolution, high blur, or poor exposure.
-- **PII Masking:** Detects and masks Personally Identifiable Information (faces, license plates) to ensure DPDP compliance.
+**Status: ✅ Implemented**
+
+- **Image Quality Check:** Rejects or flags images with high blur (Laplacian variance), poor exposure/brightness, or insufficient resolution. Implemented in `EnhancedQualityGateValidator`.
+- **PII Masking:** Detects and masks PII to ensure DPDP Act 2023 compliance.
+  - *Person/Face detection:* YOLO11m (class 0, conf=0.45) — blurs top 35% of each person bounding box (head region) with a 99×99 Gaussian kernel.
+  - *License plate detection:* YOLO11m_plates (conf=0.3) unioned with OpenCV Haar cascade (`haarcascade_russian_plate_number`) for higher recall on Indian plates.
+  - *Output:* `redacted_image_b64` (JPEG base64), `faces_detected`, `plates_detected`, `pii_found` in `result.output`.
+- **Multi-image support:** Endpoint accepts multiple images per request; returns one result object per image.
+- **REST endpoint:** `POST /api/modules/M0/process` (field: `files`, accepts `List[UploadFile]`)
 
 ### 2.2 M1: Fraud Detection
 - **Deepfake/Tamper Detection:** Analyzes images for digital manipulation and inconsistencies.
