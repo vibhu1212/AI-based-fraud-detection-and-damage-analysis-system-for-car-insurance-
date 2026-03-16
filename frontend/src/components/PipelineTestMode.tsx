@@ -61,7 +61,7 @@ export default function PipelineTestMode({ modules }: Props) {
       let output: object
       try {
         const fd = new FormData()
-        fd.append('file', image)
+        fd.append('files', image)
         const res = await fetch(`${API_BASE}/modules/${mod.id}/process`, { method: 'POST', body: fd })
         output = await res.json()
       } catch (e: unknown) {
