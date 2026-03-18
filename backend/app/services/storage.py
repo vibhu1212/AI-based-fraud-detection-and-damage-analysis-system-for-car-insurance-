@@ -119,7 +119,13 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        file_path = self.storage_path / object_key
+        file_path = (self.storage_path / object_key).resolve()
+        storage_resolved = self.storage_path.resolve()
+
+        # Prevent path traversal
+        if not file_path.is_relative_to(storage_resolved):
+            return None
+
         if file_path.exists():
             return file_path
         return None
@@ -155,7 +161,13 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        file_path = self.storage_path / object_key
+        file_path = (self.storage_path / object_key).resolve()
+        storage_resolved = self.storage_path.resolve()
+
+        # Prevent path traversal
+        if not file_path.is_relative_to(storage_resolved):
+            return False
+
         if file_path.exists():
             file_path.unlink()
             return True
@@ -171,7 +183,13 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        file_path = self.storage_path / object_key
+        file_path = (self.storage_path / object_key).resolve()
+        storage_resolved = self.storage_path.resolve()
+
+        # Prevent path traversal
+        if not file_path.is_relative_to(storage_resolved):
+            return False
+
         return file_path.exists()
     
     def store_pdf(self, pdf_bytes: bytes, filename: str) -> str:
