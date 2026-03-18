@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import desc
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
@@ -68,10 +68,10 @@ async def get_surveyor_inbox(
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
     if status_filter:
-        query = db.query(Claim).filter(Claim.status == status_filter)
+        query = db.query(Claim).options(selectinload(Claim.icve_estimates)).filter(Claim.status == status_filter)
     else:
         # Default: show both new claims and claims in review
-        query = db.query(Claim).filter(
+        query = db.query(Claim).options(selectinload(Claim.icve_estimates)).filter(
             Claim.status.in_([ClaimStatus.DRAFT_READY, ClaimStatus.SURVEYOR_REVIEW])
         )
     
@@ -1004,7 +1004,7 @@ async def get_surveyor_overview(
     Calculates summary statistics.
     """
     # Base query - claims reviewed by this surveyor
-    query = db.query(Claim).filter(
+    query = db.query(Claim).options(selectinload(Claim.icve_estimates)).filter(
         Claim.reviewed_at.isnot(None)
     )
     
