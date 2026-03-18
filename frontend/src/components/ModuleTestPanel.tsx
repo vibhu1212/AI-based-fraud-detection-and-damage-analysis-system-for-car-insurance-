@@ -99,11 +99,19 @@ export default function ModuleTestPanel({ module }: Props) {
           )}
         </div>
         <div
+          role="button"
+          tabIndex={0}
           className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInput.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              fileInput.current?.click();
+            }
+          }}
         >
           <div className="upload-icon">📷</div>
           <h4>Drop images here or click to upload</h4>
@@ -124,6 +132,7 @@ export default function ModuleTestPanel({ module }: Props) {
               <div key={i} style={{ position: 'relative', display: 'inline-block' }}>
                 <img src={src} alt={`Upload ${i + 1}`} />
                 <button
+                  aria-label="Remove image"
                   onClick={(e) => {
                     e.stopPropagation()
                     setImages(prev => prev.filter((_, idx) => idx !== i))
@@ -199,13 +208,13 @@ export default function ModuleTestPanel({ module }: Props) {
             </div>
 
             {/* PII comparison (M0 only) */}
-            {out?.redacted_image_b64 && (
+            {Boolean(out?.redacted_image_b64) && (
               <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>🔒 PII Masking Result</span>
-                  {out.pii_found
+                  {out?.pii_found
                     ? <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                        ⚠️ {out.faces_detected as number} face(s) · {out.plates_detected as number} plate(s) masked
+                        ⚠️ {out?.faces_detected as number} face(s) · {out?.plates_detected as number} plate(s) masked
                       </span>
                     : <span style={{ background: '#d1fae5', color: '#065f46', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                         ✅ No PII detected
@@ -220,7 +229,7 @@ export default function ModuleTestPanel({ module }: Props) {
                   <div>
                     <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Redacted (Gaussian Blur 99×99)</p>
                     <img
-                      src={`data:image/jpeg;base64,${out.redacted_image_b64 as string}`}
+                      src={`data:image/jpeg;base64,${out?.redacted_image_b64 as string}`}
                       alt="Redacted"
                       style={{ width: '100%', borderRadius: 8, border: '2px solid #7c3aed' }}
                     />
