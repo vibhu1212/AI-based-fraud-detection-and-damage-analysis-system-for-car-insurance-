@@ -1,0 +1,4 @@
+## 2025-02-17 - Storage Service Path Traversal Vulnerability
+**Vulnerability:** Path traversal vulnerability in `StorageService` allowed arbitrary file read, write, and delete operations via unsanitized file paths. The `object_key` and other path parameters were directly concatenated to the `storage_path` and accessed.
+**Learning:** `Pathlib`'s `/` operator with user-supplied relative paths (like `../../../etc/passwd`) does not automatically prevent escaping the base directory. Simple concatenation of paths enables an attacker to overwrite or read system files.
+**Prevention:** Strictly use `Path.resolve()` to obtain canonical paths and `Path.is_relative_to(intended_base_path)` to ensure the resolved path remains within the intended directory boundary. Reject any inputs that fail this check with an error.
