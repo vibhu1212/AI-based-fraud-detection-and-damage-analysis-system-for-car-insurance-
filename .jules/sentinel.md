@@ -1,0 +1,4 @@
+## 2025-03-20 - [Path Traversal in File Storage]
+**Vulnerability:** The `StorageService` used string concatenation/basic Path division (`self.storage_path / object_key`) without safely restricting the final resolved path. This allows arbitrary file read/write via path traversal sequences like `../../`.
+**Learning:** Basic path combinations in `pathlib` (like `Path / object_key`) do not prevent `../` sequences from traversing beyond the intended base directory, which exposes a path traversal vulnerability when handling user-controlled file paths.
+**Prevention:** Always canonically resolve the final path using `Path.resolve()` and explicitly verify it remains within the intended base directory using `Path.is_relative_to(base_dir)`. Also, safely strip leading slashes before resolving to avoid accidentally treating the suffix as an absolute path.
