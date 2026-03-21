@@ -104,6 +104,14 @@ export default function ModuleTestPanel({ module }: Props) {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInput.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              fileInput.current?.click();
+            }
+          }}
         >
           <div className="upload-icon">📷</div>
           <h4>Drop images here or click to upload</h4>
@@ -199,13 +207,13 @@ export default function ModuleTestPanel({ module }: Props) {
             </div>
 
             {/* PII comparison (M0 only) */}
-            {out?.redacted_image_b64 && (
+            {out && Boolean(out.redacted_image_b64) && (
               <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>🔒 PII Masking Result</span>
                   {out.pii_found
                     ? <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                        ⚠️ {out.faces_detected as number} face(s) · {out.plates_detected as number} plate(s) masked
+                        ⚠️ {String(out.faces_detected)} face(s) · {String(out.plates_detected)} plate(s) masked
                       </span>
                     : <span style={{ background: '#d1fae5', color: '#065f46', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                         ✅ No PII detected
