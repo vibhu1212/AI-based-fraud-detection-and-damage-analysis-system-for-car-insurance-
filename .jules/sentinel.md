@@ -1,0 +1,4 @@
+## 2025-02-14 - [Path Traversal in StorageService]
+**Vulnerability:** Path traversal vulnerability in `StorageService` allowed reading/deleting/overwriting arbitrary files outside the intended storage directory by passing payload paths like `../../../etc/passwd` to `download_file`, `upload_file`, `delete_file`, and `file_exists` methods.
+**Learning:** Concatenating user-supplied input to base paths without resolving and verifying the resulting path is a common pattern in Python that leads to directory traversal, especially when using `pathlib.Path` which correctly processes `..` components when concatenated.
+**Prevention:** Strictly use `Path.resolve()` to canonically resolve file paths and `Path.is_relative_to(base_path.resolve())` to ensure the final destination stays within intended bounds before performing any file operations.
