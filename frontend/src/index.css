@@ -129,6 +129,11 @@ body {
   color: var(--text-secondary);
 }
 
+.sidebar-item:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: -2px;
+}
+
 .sidebar-item:hover {
   background: var(--bg-card);
   color: var(--text-primary);
