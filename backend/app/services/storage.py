@@ -87,11 +87,15 @@ class StorageService:
         Returns:
             Dictionary with upload metadata
         """
+        # Determine full path securely to prevent Path Traversal
+        base_path = self.storage_path.resolve()
+        file_path = (self.storage_path / object_key).resolve()
+        if not file_path.is_relative_to(base_path):
+            raise ValueError("Invalid object key path")
+
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
-        # Determine full path
-        file_path = self.storage_path / object_key
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write file
@@ -119,7 +123,11 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        file_path = self.storage_path / object_key
+        base_path = self.storage_path.resolve()
+        file_path = (self.storage_path / object_key).resolve()
+        if not file_path.is_relative_to(base_path):
+            return None
+
         if file_path.exists():
             return file_path
         return None
@@ -155,7 +163,11 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        file_path = self.storage_path / object_key
+        base_path = self.storage_path.resolve()
+        file_path = (self.storage_path / object_key).resolve()
+        if not file_path.is_relative_to(base_path):
+            return False
+
         if file_path.exists():
             file_path.unlink()
             return True
@@ -171,7 +183,11 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        file_path = self.storage_path / object_key
+        base_path = self.storage_path.resolve()
+        file_path = (self.storage_path / object_key).resolve()
+        if not file_path.is_relative_to(base_path):
+            return False
+
         return file_path.exists()
     
     def store_pdf(self, pdf_bytes: bytes, filename: str) -> str:
@@ -189,8 +205,11 @@ class StorageService:
         reports_dir = self.storage_path / "reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
         
+        base_path = self.storage_path.resolve()
         # Generate file path
-        file_path = reports_dir / filename
+        file_path = (reports_dir / filename).resolve()
+        if not file_path.is_relative_to(base_path):
+            raise ValueError("Invalid PDF filename")
         
         # Write PDF file
         with open(file_path, "wb") as f:
