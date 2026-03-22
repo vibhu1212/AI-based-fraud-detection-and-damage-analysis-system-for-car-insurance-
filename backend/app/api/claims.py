@@ -2,7 +2,7 @@
 Claim management endpoints for customers.
 """
 from fastapi import APIRouter, HTTPException, Depends, status, Query, UploadFile, File, Form
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import List, Optional
 from uuid import UUID
 from datetime import date, timedelta
@@ -153,7 +153,10 @@ async def get_customer_dashboard(
     from datetime import datetime, timedelta
     
     # Query all customer's claims
-    all_claims = db.query(Claim).filter(
+    # Eagerly load icve_estimates to prevent N+1 query problem when generating summaries
+    all_claims = db.query(Claim).options(
+        selectinload(Claim.icve_estimates)
+    ).filter(
         Claim.customer_id == str(current_user.id)
     ).order_by(Claim.created_at.desc()).all()
     
