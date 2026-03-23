@@ -93,8 +93,17 @@ export default function PipelineTestMode({ modules }: Props) {
           {image && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{image.name}</span>}
         </div>
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Upload image drop zone"
           className="upload-zone"
           onClick={() => fileInput.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              fileInput.current?.click();
+            }
+          }}
           style={{ padding: '20px', cursor: 'pointer' }}
         >
           <div className="upload-icon">📷</div>

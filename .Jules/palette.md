@@ -1,0 +1,3 @@
+## 2026-03-23 - Interactive Drop Zones Lack Keyboard Support
+**Learning:** In the InsurAI app, interactive file upload drop zones (`div` elements acting as buttons) were originally implemented only with mouse events (`onClick`, `onDrop`). This pattern completely locked out keyboard users from triggering file uploads, breaking a core interaction.
+**Action:** Always ensure that custom interactive elements like drop zones include `role="button"`, `tabIndex={0}`, an `onKeyDown` handler for 'Enter' and 'Space' keys, and `:focus-visible` CSS styles to guarantee keyboard accessibility.
