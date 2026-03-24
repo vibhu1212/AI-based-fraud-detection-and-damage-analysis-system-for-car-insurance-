@@ -100,10 +100,18 @@ export default function ModuleTestPanel({ module }: Props) {
         </div>
         <div
           className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
+          role="button"
+          tabIndex={0}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInput.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              fileInput.current?.click()
+            }
+          }}
         >
           <div className="upload-icon">📷</div>
           <h4>Drop images here or click to upload</h4>
@@ -199,7 +207,7 @@ export default function ModuleTestPanel({ module }: Props) {
             </div>
 
             {/* PII comparison (M0 only) */}
-            {out?.redacted_image_b64 && (
+            {!!out?.redacted_image_b64 && (
               <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>🔒 PII Masking Result</span>
