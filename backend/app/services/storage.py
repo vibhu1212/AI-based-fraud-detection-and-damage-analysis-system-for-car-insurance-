@@ -21,6 +21,31 @@ class StorageService:
         self.storage_path = Path(settings.STORAGE_PATH)
         self._ensure_directories()
     
+    def _get_safe_path(self, object_key: str) -> Path:
+        """
+        Safely resolve a path within the storage directory, preventing path traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object
+
+        Raises:
+            ValueError: If the path attempts to traverse outside the storage directory
+        """
+        # Resolve canonical paths
+        base_path = self.storage_path.resolve()
+        # Ensure object_key doesn't start with / to make it purely relative
+        safe_key = object_key.lstrip("/")
+        file_path = (self.storage_path / safe_key).resolve()
+
+        # Check if resolved path is relative to the base path
+        if not file_path.is_relative_to(base_path):
+            raise ValueError(f"Invalid path: Access denied for {object_key}")
+
+        return file_path
+
     def _ensure_directories(self):
         """Create storage directory structure if it doesn't exist."""
         directories = [
@@ -90,8 +115,8 @@ class StorageService:
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
-        # Determine full path
-        file_path = self.storage_path / object_key
+        # Determine full path securely
+        file_path = self._get_safe_path(object_key)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write file
@@ -119,9 +144,12 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        file_path = self.storage_path / object_key
-        if file_path.exists():
-            return file_path
+        try:
+            file_path = self._get_safe_path(object_key)
+            if file_path.exists():
+                return file_path
+        except ValueError:
+            pass
         return None
     
     def generate_presigned_url(
@@ -155,10 +183,13 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        file_path = self.storage_path / object_key
-        if file_path.exists():
-            file_path.unlink()
-            return True
+        try:
+            file_path = self._get_safe_path(object_key)
+            if file_path.exists():
+                file_path.unlink()
+                return True
+        except ValueError:
+            pass
         return False
     
     def file_exists(self, object_key: str) -> bool:
@@ -171,8 +202,11 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        file_path = self.storage_path / object_key
-        return file_path.exists()
+        try:
+            file_path = self._get_safe_path(object_key)
+            return file_path.exists()
+        except ValueError:
+            return False
     
     def store_pdf(self, pdf_bytes: bytes, filename: str) -> str:
         """
@@ -185,12 +219,12 @@ class StorageService:
         Returns:
             URL/path to stored PDF
         """
-        # Create reports directory if it doesn't exist
-        reports_dir = self.storage_path / "reports"
-        reports_dir.mkdir(parents=True, exist_ok=True)
+        # Generate and validate file path
+        object_key = f"reports/{filename}"
+        file_path = self._get_safe_path(object_key)
         
-        # Generate file path
-        file_path = reports_dir / filename
+        # Create reports directory if it doesn't exist
+        file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write PDF file
         with open(file_path, "wb") as f:
