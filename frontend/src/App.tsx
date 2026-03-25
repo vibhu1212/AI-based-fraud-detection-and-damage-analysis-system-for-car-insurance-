@@ -64,22 +64,46 @@ function App() {
 
         {/* Navigation */}
         <div
+          role="button"
+          tabIndex={0}
           className={`sidebar-item ${currentView === 'overview' ? 'active' : ''}`}
           onClick={() => setCurrentView('overview')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setCurrentView('overview')
+            }
+          }}
         >
           <span className="module-icon">📊</span>
           Overview
         </div>
         <div
+          role="button"
+          tabIndex={0}
           className={`sidebar-item ${currentView === 'pipeline' ? 'active' : ''}`}
           onClick={() => setCurrentView('pipeline')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setCurrentView('pipeline')
+            }
+          }}
         >
           <span className="module-icon">⚡</span>
           Pipeline Test
         </div>
         <div
+          role="button"
+          tabIndex={0}
           className={`sidebar-item ${currentView === 'benchmark' ? 'active' : ''}`}
           onClick={() => setCurrentView('benchmark')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setCurrentView('benchmark')
+            }
+          }}
         >
           <span className="module-icon">📈</span>
           Benchmark (SOTA vs Scratch)
@@ -92,8 +116,16 @@ function App() {
         {MODULES.map(mod => (
           <div
             key={mod.id}
+            role="button"
+            tabIndex={0}
             className={`sidebar-item ${currentView === 'module' && selectedModule === mod.id ? 'active' : ''}`}
             onClick={() => handleModuleSelect(mod.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleModuleSelect(mod.id)
+              }
+            }}
           >
             <span className="module-tag" style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa' }}>
               {mod.id}
