@@ -1,0 +1,3 @@
+## 2024-05-24 - Bulk Delete and Parallel I/O Optimization
+**Learning:** For resolving N+1 delete queries and optimizing I/O-bound object storage deletions, using a combination of `delete(synchronize_session=False)`, `in_` operator with subqueries, fetching only necessary model columns (e.g. `object_key` instead of the whole model), and `ThreadPoolExecutor` drastically decreases latency and query overhead.
+**Action:** Always utilize subqueries or fetch minimal necessary model properties when performing bulk operations to avoid expensive whole-model reads. Employ `ThreadPoolExecutor` for parallelizing network or storage interactions like file deletions. Use `synchronize_session=False` for bulk deletes.
