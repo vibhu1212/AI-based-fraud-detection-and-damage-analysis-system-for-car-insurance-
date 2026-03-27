@@ -1,0 +1,4 @@
+## 2024-05-24 - Fix Path Traversal in StorageService
+**Vulnerability:** The `StorageService` used insecure path string concatenation (`self.storage_path / object_key`) to resolve files. A user could supply an `object_key` containing `../` or an absolute path (e.g., `/etc/passwd`) which would allow them to perform a Path Traversal attack, potentially overwriting, downloading, or deleting files outside the intended storage directory.
+**Learning:** Joining untrusted inputs directly to a base `Path` object in `pathlib` can still result in traversing outside the designated directory if the untrusted input contains absolute paths or traversal sequences (`../`).
+**Prevention:** Always securely join user-provided keys by first stripping leading slashes (`key.lstrip('/')`), and then strictly use `Path.resolve()` along with `Path.is_relative_to(intended_storage_path.resolve())` to canonically resolve and boundary-check paths.
