@@ -1,0 +1,3 @@
+## 2024-03-27 - N+1 Queries in Surveyor API Endpoint Iterations
+**Learning:** In the Surveyor API endpoints `get_surveyor_inbox`, `get_surveyor_overview`, and `get_surveyor_reports`, iterating over a list of `Claim` objects causes N+1 queries when accessing relationships such as `claim.customer_id`, `claim.icve_estimates`, and `claim.state_transitions`.
+**Action:** When querying collections of objects that require related data, proactively eager load them using `joinedload` (for many-to-one) and `selectinload` (for one-to-many/collections) from `sqlalchemy.orm`. Specifically, use `selectinload(Claim.icve_estimates)` to prevent the Cartesian product effect of `joinedload` on lists.
