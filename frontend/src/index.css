@@ -235,6 +235,12 @@ body {
   background: rgba(124, 58, 237, 0.05);
 }
 
+.upload-zone:focus-visible {
+  outline: none;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+}
+
 .upload-zone .upload-icon {
   font-size: 48px;
   margin-bottom: 12px;
