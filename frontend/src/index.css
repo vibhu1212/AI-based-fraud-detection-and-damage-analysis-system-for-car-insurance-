@@ -230,7 +230,8 @@ body {
 }
 
 .upload-zone:hover,
-.upload-zone.drag-over {
+.upload-zone.drag-over,
+.upload-zone:focus-visible {
   border-color: var(--accent-purple);
   background: rgba(124, 58, 237, 0.05);
 }
