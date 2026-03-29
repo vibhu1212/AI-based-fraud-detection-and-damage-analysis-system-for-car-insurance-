@@ -32,6 +32,43 @@ class StorageService:
         ]
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
+
+    def _get_secure_path(self, object_key: str) -> Path:
+        """
+        Securely join object_key to storage_path and prevent path traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object
+
+        Raises:
+            ValueError: If path is outside storage directory (Path Traversal attempt)
+        """
+        # Strip leading slashes to prevent absolute paths acting as root
+        clean_key = object_key.lstrip('/')
+
+        # Resolve to canonical paths
+        base_path = self.storage_path.resolve()
+
+        # In Python 3, joining an absolute path discards the preceding path parts.
+        # We need to ensure that the clean_key doesn't reset the root.
+        # By ensuring it doesn't start with / after stripping, and then joining,
+        # we prevent absolute path overrides.
+        target_path = (self.storage_path / clean_key).resolve()
+
+        # Verify target is within base directory
+        if not target_path.is_relative_to(base_path):
+            raise ValueError(f"Invalid path traversal attempt: {object_key}")
+
+        # Additional protection against relative path that resolves properly but tries to access outside of intended folder
+        # for example if we have /app/storage and object_key is "etc/passwd" it resolves to /app/storage/etc/passwd which is relative to /app/storage
+        # but what if they wanted /etc/passwd and stripped it to etc/passwd? We can check if intended path exists.
+        # However, what we really want to prevent is accessing files OUTSIDE the storage directory.
+        # If they specify "etc/passwd", it's safely mapped INSIDE the storage directory.
+        # So it's not a path traversal vulnerability. It's just a file inside the storage directory named "etc/passwd".
+        return target_path
     
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
@@ -90,8 +127,8 @@ class StorageService:
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
-        # Determine full path
-        file_path = self.storage_path / object_key
+        # Determine full path securely
+        file_path = self._get_secure_path(object_key)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write file
@@ -119,9 +156,12 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        file_path = self.storage_path / object_key
-        if file_path.exists():
-            return file_path
+        try:
+            file_path = self._get_secure_path(object_key)
+            if file_path.exists():
+                return file_path
+        except ValueError:
+            pass # Handle path traversal silently
         return None
     
     def generate_presigned_url(
@@ -155,10 +195,13 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        file_path = self.storage_path / object_key
-        if file_path.exists():
-            file_path.unlink()
-            return True
+        try:
+            file_path = self._get_secure_path(object_key)
+            if file_path.exists():
+                file_path.unlink()
+                return True
+        except ValueError:
+            pass
         return False
     
     def file_exists(self, object_key: str) -> bool:
@@ -171,8 +214,11 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        file_path = self.storage_path / object_key
-        return file_path.exists()
+        try:
+            file_path = self._get_secure_path(object_key)
+            return file_path.exists()
+        except ValueError:
+            return False
     
     def store_pdf(self, pdf_bytes: bytes, filename: str) -> str:
         """
