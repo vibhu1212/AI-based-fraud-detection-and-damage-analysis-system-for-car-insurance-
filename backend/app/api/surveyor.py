@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import desc
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
@@ -1004,7 +1004,11 @@ async def get_surveyor_overview(
     Calculates summary statistics.
     """
     # Base query - claims reviewed by this surveyor
-    query = db.query(Claim).filter(
+    query = db.query(Claim).options(
+        joinedload(Claim.customer),
+        selectinload(Claim.icve_estimates),
+        selectinload(Claim.state_transitions)
+    ).filter(
         Claim.reviewed_at.isnot(None)
     )
     
@@ -1077,10 +1081,8 @@ async def get_surveyor_overview(
     for claim in paginated_claims:
         # Get customer name
         customer_name = "Unknown"
-        if claim.customer_id:
-            user = db.query(User).filter(User.id == claim.customer_id).first()
-            if user:
-                customer_name = user.name or user.phone
+        if claim.customer:
+            customer_name = claim.customer.name or claim.customer.phone or "Unknown"
         
         # Get estimate total
         est_amount = 0.0
@@ -1089,11 +1091,10 @@ async def get_surveyor_overview(
         
         # Get decision reason from last transition
         decision_reason = None
-        last_transition = db.query(ClaimStateTransition).filter(
-            ClaimStateTransition.claim_id == str(claim.id)
-        ).order_by(desc(ClaimStateTransition.created_at)).first()
-        if last_transition:
+        if claim.state_transitions:
+            last_transition = max(claim.state_transitions, key=lambda t: t.created_at)
             decision_reason = last_transition.reason
+
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
             policy_id=claim.policy_id,

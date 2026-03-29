@@ -1,0 +1,3 @@
+## 2024-03-29 - Eliminate N+1 Queries in Surveyor Overview
+**Learning:** In SQLAlchemy, iterating over a collection of objects and executing `db.query()` inside the loop for related entities (e.g., fetching a user for each claim's customer_id, or getting related ICVE estimates and state transitions) causes severe N+1 query performance bottlenecks.
+**Action:** Instead of inline loop queries, explicitly eager load relationships on the base query. Use `joinedload` for many-to-one/one-to-one relationships (like `customer`) and `selectinload` for one-to-many collections (like `icve_estimates` and `state_transitions`), then access these relationships as properties directly in python memory.
