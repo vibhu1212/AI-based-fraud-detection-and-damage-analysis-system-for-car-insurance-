@@ -32,6 +32,33 @@ class StorageService:
         ]
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
+
+    def _get_secure_path(self, object_key: str) -> Optional[Path]:
+        """
+        Securely resolve and validate file paths to prevent Path Traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object if secure, None otherwise
+        """
+        try:
+            # Reject absolute path indicators early
+            if object_key.startswith('/') or object_key.startswith('\\') or ':\\' in object_key:
+                return None
+
+            # Resolve both paths to canonical absolute forms
+            resolved_storage = self.storage_path.resolve()
+            resolved_file = (self.storage_path / object_key).resolve()
+
+            # Ensure the resolved file path is within the storage directory
+            if not resolved_file.is_relative_to(resolved_storage):
+                return None
+
+            return resolved_file
+        except Exception:
+            return None
     
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
@@ -87,11 +114,14 @@ class StorageService:
         Returns:
             Dictionary with upload metadata
         """
+        # Determine and validate full path
+        file_path = self._get_secure_path(object_key)
+        if not file_path:
+            raise ValueError("Invalid object key path (possible Path Traversal)")
+
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
-        # Determine full path
-        file_path = self.storage_path / object_key
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write file
@@ -119,8 +149,8 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        file_path = self.storage_path / object_key
-        if file_path.exists():
+        file_path = self._get_secure_path(object_key)
+        if file_path and file_path.exists():
             return file_path
         return None
     
@@ -155,8 +185,8 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        file_path = self.storage_path / object_key
-        if file_path.exists():
+        file_path = self._get_secure_path(object_key)
+        if file_path and file_path.exists():
             file_path.unlink()
             return True
         return False
@@ -171,8 +201,8 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        file_path = self.storage_path / object_key
-        return file_path.exists()
+        file_path = self._get_secure_path(object_key)
+        return file_path.exists() if file_path else False
     
     def store_pdf(self, pdf_bytes: bytes, filename: str) -> str:
         """

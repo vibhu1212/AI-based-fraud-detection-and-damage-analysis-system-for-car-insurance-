@@ -1,0 +1,4 @@
+## 2024-05-30 - Fix Path Traversal in StorageService
+**Vulnerability:** The `StorageService` used `self.storage_path / object_key` without validation in operations like `upload_file`, `download_file`, `delete_file`, and `file_exists`. This could allow attackers to use `../` or absolute paths to escape the storage directory and access or manipulate arbitrary files on the system.
+**Learning:** `pathlib.Path` concatenation `path / unsafe_input` allows escaping if `unsafe_input` is absolute or contains `../` sequences, making it vulnerable to Path Traversal if the output isn't carefully constrained.
+**Prevention:** Securely resolve user-provided paths using `Path.resolve()` and explicitly check `resolved_file.is_relative_to(resolved_storage)`. Reject absolute path indicators (`/`, `\`, `:\`) early and strip leading slashes before resolution.
