@@ -611,9 +611,10 @@ async def delete_claim(
     
     # 5. Delete ICVE estimates and line items
     from app.models.icve import ICVEEstimate, ICVELineItem
-    icve_estimates = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id == claim_id_str).all()
-    for estimate in icve_estimates:
-        db.query(ICVELineItem).filter(ICVELineItem.icve_estimate_id == estimate.id).delete()
+    # Optimization: Batch delete line items using a subquery to prevent N+1 queries
+    estimate_ids = [e.id for e in db.query(ICVEEstimate.id).filter(ICVEEstimate.claim_id == claim_id_str).all()]
+    if estimate_ids:
+        db.query(ICVELineItem).filter(ICVELineItem.icve_estimate_id.in_(estimate_ids)).delete(synchronize_session=False)
     db.query(ICVEEstimate).filter(ICVEEstimate.claim_id == claim_id_str).delete()
     
     # 6. Delete AI artifacts
@@ -621,13 +622,21 @@ async def delete_claim(
     db.query(AIArtifact).filter(AIArtifact.claim_id == claim_id_str).delete()
     
     # 7. Delete media files from storage and database
-    media_assets = db.query(MediaAsset).filter(MediaAsset.claim_id == claim_id_str).all()
-    for media in media_assets:
+    # Optimization: Fetch only object keys and parallelize deletion from storage
+    import concurrent.futures
+    media_keys = [m.object_key for m in db.query(MediaAsset.object_key).filter(MediaAsset.claim_id == claim_id_str).all()]
+
+    def delete_media_file(object_key):
         try:
-            storage_service.delete_file(media.object_key)
+            storage_service.delete_file(object_key)
         except Exception as e:
-            print(f"Warning: Failed to delete file {media.object_key}: {e}")
-    db.query(MediaAsset).filter(MediaAsset.claim_id == claim_id_str).delete()
+            print(f"Warning: Failed to delete file {object_key}: {e}")
+
+    if media_keys:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            executor.map(delete_media_file, media_keys)
+
+    db.query(MediaAsset).filter(MediaAsset.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 8. Delete report drafts
     from app.models.report import ReportDraft
