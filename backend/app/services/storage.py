@@ -33,6 +33,24 @@ class StorageService:
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
     
+    def _is_safe_path(self, object_key: str) -> bool:
+        """
+        Validate that the object key is safe and doesn't contain path traversal attempts.
+        """
+        if object_key.startswith('/') or object_key.startswith('\\') or ':\\' in object_key:
+            return False
+
+        parts = object_key.replace('\\', '/').split('/')
+        if '..' in parts:
+            return False
+
+        try:
+            file_path = (self.storage_path / object_key).resolve()
+            storage_dir = self.storage_path.resolve()
+            return file_path.is_relative_to(storage_dir)
+        except Exception:
+            return False
+
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
         Calculate SHA-256 hash of file content.
@@ -87,6 +105,9 @@ class StorageService:
         Returns:
             Dictionary with upload metadata
         """
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Unsafe object key provided: {object_key}")
+
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
@@ -119,6 +140,9 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
+        if not self._is_safe_path(object_key):
+            return None
+
         file_path = self.storage_path / object_key
         if file_path.exists():
             return file_path
@@ -155,6 +179,9 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
+        if not self._is_safe_path(object_key):
+            return False
+
         file_path = self.storage_path / object_key
         if file_path.exists():
             file_path.unlink()
@@ -171,6 +198,9 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
+        if not self._is_safe_path(object_key):
+            return False
+
         file_path = self.storage_path / object_key
         return file_path.exists()
     
