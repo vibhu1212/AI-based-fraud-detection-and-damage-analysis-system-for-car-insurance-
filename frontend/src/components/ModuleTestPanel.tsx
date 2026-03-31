@@ -99,11 +99,21 @@ export default function ModuleTestPanel({ module }: Props) {
           )}
         </div>
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Upload images drop zone"
           className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
+          style={{ outlineColor: 'var(--accent-purple)', outlineOffset: '2px' }}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInput.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              fileInput.current?.click()
+            }
+          }}
         >
           <div className="upload-icon">📷</div>
           <h4>Drop images here or click to upload</h4>
@@ -138,6 +148,7 @@ export default function ModuleTestPanel({ module }: Props) {
                     fontSize: 13, lineHeight: '22px', textAlign: 'center', padding: 0,
                   }}
                   title="Remove image"
+                  aria-label="Remove image"
                 >✕</button>
               </div>
             ))}
@@ -199,7 +210,7 @@ export default function ModuleTestPanel({ module }: Props) {
             </div>
 
             {/* PII comparison (M0 only) */}
-            {out?.redacted_image_b64 && (
+            {!!out?.redacted_image_b64 && (
               <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>🔒 PII Masking Result</span>
