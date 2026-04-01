@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import desc
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
@@ -68,10 +68,16 @@ async def get_surveyor_inbox(
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
     if status_filter:
-        query = db.query(Claim).filter(Claim.status == status_filter)
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(Claim.status == status_filter)
     else:
         # Default: show both new claims and claims in review
-        query = db.query(Claim).filter(
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(
             Claim.status.in_([ClaimStatus.DRAFT_READY, ClaimStatus.SURVEYOR_REVIEW])
         )
     
@@ -120,10 +126,8 @@ async def get_surveyor_inbox(
             
         # Get customer name (mock/lazy)
         customer_name = "Unknown"
-        if claim.customer_id:
-             user = db.query(User).filter(User.id == claim.customer_id).first()
-             if user:
-                 customer_name = user.full_name
+        if claim.customer:
+             customer_name = claim.customer.full_name
         
         # Get estimate total
         est_amount = 0.0
