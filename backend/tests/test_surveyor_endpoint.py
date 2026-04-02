@@ -3,10 +3,12 @@ Test script to debug surveyor endpoint 500 error
 """
 import sys
 import os
+import pathlib
 
 # Change to backend directory
-os.chdir('/home/kartikay/Desktop/car detection/backend')
-sys.path.insert(0, '/home/kartikay/Desktop/car detection/backend')
+backend_dir = str(pathlib.Path(__file__).parent.parent.absolute())
+os.chdir(backend_dir)
+sys.path.insert(0, backend_dir)
 
 from app.models.base import get_db
 from app.models.claim import Claim
