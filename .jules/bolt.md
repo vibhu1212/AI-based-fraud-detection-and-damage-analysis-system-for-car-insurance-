@@ -1,3 +1,3 @@
-## 2024-05-24 - [SQLAlchemy N+1 Query on Collection Relationships]
-**Learning:** In SQLAlchemy, when fetching collection relationships (like `Claim.icve_estimates`) for a list of objects and then iterating over them, it causes severe N+1 query problems.
-**Action:** Always use `selectinload` (instead of `joinedload`) to eager load collection relationships in list queries to prevent the N+1 queries without causing Cartesian product regressions.
+## 2024-03-20 - N+1 Queries in Claim Workflows
+**Learning:** Found critical N+1 query bottlenecks in surveyor API endpoints (`get_surveyor_inbox`, `get_surveyor_overview`, `get_surveyor_reports`). Iterating over claim lists and executing individual `db.query()` for `Claim.customer`, `Claim.state_transitions`, and `Claim.icve_estimates` degraded performance. Due to one-to-many collection structures (`icve_estimates`, `state_transitions`), using `joinedload` on them can cause Cartesian product memory regressions.
+**Action:** When eager loading to solve N+1 on `Claim` endpoints, explicitly use `joinedload` for one-to-one/many-to-one (like `Claim.customer`) but MUST use `selectinload` for one-to-many collections (like `Claim.icve_estimates`, `Claim.state_transitions`) to prevent Cartesian products.
