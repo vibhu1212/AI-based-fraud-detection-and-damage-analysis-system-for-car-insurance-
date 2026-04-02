@@ -116,13 +116,14 @@ export default function ModuleTestPanel({ module }: Props) {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInput.current?.click()}
+          role="button"
+          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              fileInput.current?.click()
+              e.preventDefault();
+              fileInput.current?.click();
             }
           }}
-          style={{ outline: 'none' }}
         >
           <div className="upload-icon">📷</div>
           <h4>Drop images here or click to upload</h4>

@@ -107,13 +107,15 @@ export default function PipelineTestMode({ modules }: Props) {
           role="button"
           tabIndex={0}
           onClick={() => fileInput.current?.click()}
+          style={{ padding: '20px', cursor: 'pointer' }}
+          role="button"
+          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              fileInput.current?.click()
+              e.preventDefault();
+              fileInput.current?.click();
             }
           }}
-          style={{ padding: '20px', cursor: 'pointer', outline: 'none' }}
         >
           <div className="upload-icon">📷</div>
           <h4>{image ? `✅ ${image.name}` : 'Click to upload an image for the pipeline'}</h4>
