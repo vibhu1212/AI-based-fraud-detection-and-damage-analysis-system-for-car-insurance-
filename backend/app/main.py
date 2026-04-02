@@ -42,6 +42,8 @@ from app.api import metrics, explanations
 app.include_router(metrics.router, prefix="/api", tags=["Metrics"])
 app.include_router(explanations.router, prefix="/api", tags=["Explanations"])
 app.include_router(modules.router, prefix="/api", tags=["Module Testing"])
+from app.api import pipeline_api
+app.include_router(pipeline_api.router, prefix="/api", tags=["Pipeline"])
 
 
 @app.on_event("startup")
