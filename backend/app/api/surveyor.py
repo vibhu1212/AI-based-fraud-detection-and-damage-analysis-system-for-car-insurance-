@@ -1095,13 +1095,13 @@ async def get_surveyor_overview(
         if claim.icve_estimates:
             est_amount = float(claim.icve_estimates[0].total_estimate)
         
-        # Get decision reason from last transition
+        # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
-        last_transition = db.query(ClaimStateTransition).filter(
-            ClaimStateTransition.claim_id == str(claim.id)
-        ).order_by(desc(ClaimStateTransition.created_at)).first()
-        if last_transition:
+        if claim.state_transitions:
+            # state_transitions is a list from backref, get the most recently created
+            last_transition = sorted(claim.state_transitions, key=lambda x: x.created_at, reverse=True)[0]
             decision_reason = last_transition.reason
+
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
             policy_id=claim.policy_id,
