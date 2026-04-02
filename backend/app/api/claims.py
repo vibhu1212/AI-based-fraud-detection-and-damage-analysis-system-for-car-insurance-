@@ -7,6 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import date, timedelta
 from PIL import Image
+from concurrent.futures import ThreadPoolExecutor
 import io
 from app.models.base import get_db
 from app.models.user import User
@@ -599,46 +600,53 @@ async def delete_claim(
     
     # 1. Delete audit events
     from app.models.audit import AuditEvent, RiskAssessment
-    db.query(AuditEvent).filter(AuditEvent.claim_id == claim_id_str).delete()
+    db.query(AuditEvent).filter(AuditEvent.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 2. Delete risk assessments
-    db.query(RiskAssessment).filter(RiskAssessment.claim_id == claim_id_str).delete()
+    db.query(RiskAssessment).filter(RiskAssessment.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 3. Delete duplicate check results
     from app.models.damage import DuplicateCheckResult
-    db.query(DuplicateCheckResult).filter(DuplicateCheckResult.claim_id == claim_id_str).delete()
+    db.query(DuplicateCheckResult).filter(DuplicateCheckResult.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 4. Delete damages
     from app.models.damage import DamageDetection
-    db.query(DamageDetection).filter(DamageDetection.claim_id == claim_id_str).delete()
+    db.query(DamageDetection).filter(DamageDetection.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 5. Delete ICVE estimates and line items
     from app.models.icve import ICVEEstimate, ICVELineItem
-    icve_estimates = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id == claim_id_str).all()
-    for estimate in icve_estimates:
-        db.query(ICVELineItem).filter(ICVELineItem.icve_estimate_id == estimate.id).delete()
-    db.query(ICVEEstimate).filter(ICVEEstimate.claim_id == claim_id_str).delete()
+    db.query(ICVELineItem).filter(
+        ICVELineItem.icve_estimate_id.in_(
+            db.query(ICVEEstimate.id).filter(ICVEEstimate.claim_id == claim_id_str)
+        )
+    ).delete(synchronize_session=False)
+    db.query(ICVEEstimate).filter(ICVEEstimate.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 6. Delete AI artifacts
     from app.models.report import AIArtifact
-    db.query(AIArtifact).filter(AIArtifact.claim_id == claim_id_str).delete()
+    db.query(AIArtifact).filter(AIArtifact.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 7. Delete media files from storage and database
-    media_assets = db.query(MediaAsset).filter(MediaAsset.claim_id == claim_id_str).all()
-    for media in media_assets:
+    media_assets = db.query(MediaAsset.object_key).filter(MediaAsset.claim_id == claim_id_str).all()
+
+    def _delete_media(key_tuple):
         try:
-            storage_service.delete_file(media.object_key)
+            storage_service.delete_file(key_tuple[0])
         except Exception as e:
-            print(f"Warning: Failed to delete file {media.object_key}: {e}")
-    db.query(MediaAsset).filter(MediaAsset.claim_id == claim_id_str).delete()
+            print(f"Warning: Failed to delete file {key_tuple[0]}: {e}")
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        executor.map(_delete_media, media_assets)
+
+    db.query(MediaAsset).filter(MediaAsset.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 8. Delete report drafts
     from app.models.report import ReportDraft
-    db.query(ReportDraft).filter(ReportDraft.claim_id == claim_id_str).delete()
+    db.query(ReportDraft).filter(ReportDraft.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 9. Delete state transitions (already has cascade in model, but explicit is safer)
     from app.models.claim import ClaimStateTransition
-    db.query(ClaimStateTransition).filter(ClaimStateTransition.claim_id == claim_id_str).delete()
+    db.query(ClaimStateTransition).filter(ClaimStateTransition.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 10. Finally, delete the claim itself
     db.delete(claim)
