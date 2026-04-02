@@ -72,10 +72,16 @@ async def get_surveyor_inbox(
         selectinload(Claim.icve_estimates)
     )
     if status_filter:
-        query = query.filter(Claim.status == status_filter)
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(Claim.status == status_filter)
     else:
         # Default: show both new claims and claims in review
-        query = query.filter(
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(
             Claim.status.in_([ClaimStatus.DRAFT_READY, ClaimStatus.SURVEYOR_REVIEW])
         )
     
@@ -125,7 +131,7 @@ async def get_surveyor_inbox(
         # Get customer name (optimized with eager loading)
         customer_name = "Unknown"
         if claim.customer:
-            customer_name = claim.customer.full_name
+             customer_name = claim.customer.full_name
         
         # Get estimate total
         est_amount = 0.0
@@ -1008,8 +1014,7 @@ async def get_surveyor_overview(
     # Base query - claims reviewed by this surveyor
     query = db.query(Claim).options(
         joinedload(Claim.customer),
-        selectinload(Claim.icve_estimates),
-        selectinload(Claim.state_transitions)
+        selectinload(Claim.icve_estimates)
     ).filter(
         Claim.reviewed_at.isnot(None)
     )
@@ -1164,10 +1169,10 @@ async def get_surveyor_reports(
     from app.models.report import ReportDraft
     
     # Base query - all reports
-    query = db.query(ReportDraft).join(Claim, ReportDraft.claim_id == Claim.id).options(
+    query = db.query(ReportDraft).options(
         joinedload(ReportDraft.claim).joinedload(Claim.customer),
         joinedload(ReportDraft.claim).selectinload(Claim.icve_estimates)
-    )
+    ).join(Claim, ReportDraft.claim_id == Claim.id)
     
     # Date range filtering
     if start_date:

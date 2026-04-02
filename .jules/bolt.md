@@ -1,3 +1,5 @@
-## 2024-03-20 - N+1 Queries in Claim Workflows
-**Learning:** Found critical N+1 query bottlenecks in surveyor API endpoints (`get_surveyor_inbox`, `get_surveyor_overview`, `get_surveyor_reports`). Iterating over claim lists and executing individual `db.query()` for `Claim.customer`, `Claim.state_transitions`, and `Claim.icve_estimates` degraded performance. Due to one-to-many collection structures (`icve_estimates`, `state_transitions`), using `joinedload` on them can cause Cartesian product memory regressions.
-**Action:** When eager loading to solve N+1 on `Claim` endpoints, explicitly use `joinedload` for one-to-one/many-to-one (like `Claim.customer`) but MUST use `selectinload` for one-to-many collections (like `Claim.icve_estimates`, `Claim.state_transitions`) to prevent Cartesian products.
+## 2026-03-20 - [N+1 query issue avoided by not missing memory context]
+
+## 2024-05-24 - N+1 query vulnerability due to lazy loaded relationships
+**Learning:** Found N+1 query bottleneck across surveyor endpoints: `get_surveyor_inbox`, `get_surveyor_overview`, and `get_surveyor_reports` iterating over queries fetching User relationships and `claim.icve_estimates` relationships per row causing major performance bottlenecks when working with a list of claims.
+**Action:** Used SQLAlchemy`s `joinedload` and `selectinload` to eager load the `customer` and `icve_estimates` on the claims list queries instead of performing queries in the loop.
