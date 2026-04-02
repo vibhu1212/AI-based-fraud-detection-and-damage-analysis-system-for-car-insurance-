@@ -72,10 +72,16 @@ async def get_surveyor_inbox(
         selectinload(Claim.icve_estimates)
     )
     if status_filter:
-        query = db.query(Claim).options(joinedload(Claim.customer), selectinload(Claim.icve_estimates)).filter(Claim.status == status_filter)
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(Claim.status == status_filter)
     else:
         # Default: show both new claims and claims in review
-        query = db.query(Claim).options(joinedload(Claim.customer), selectinload(Claim.icve_estimates)).filter(
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(
             Claim.status.in_([ClaimStatus.DRAFT_READY, ClaimStatus.SURVEYOR_REVIEW])
         )
     
@@ -1094,9 +1100,9 @@ async def get_surveyor_overview(
         # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
         if claim.state_transitions:
-            last_transition = sorted(claim.state_transitions, key=lambda x: x.created_at, reverse=True)[0]
-            decision_reason = last_transition.reason
-
+            last_transition = sorted(claim.state_transitions, key=lambda t: t.created_at, reverse=True)[0]
+            if last_transition:
+                decision_reason = last_transition.reason
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
             policy_id=claim.policy_id,
