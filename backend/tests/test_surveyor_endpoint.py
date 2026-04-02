@@ -5,8 +5,10 @@ import sys
 import os
 
 # Change to backend directory
-os.chdir('/home/kartikay/Desktop/car detection/backend')
-sys.path.insert(0, '/home/kartikay/Desktop/car detection/backend')
+import pathlib
+base_dir = pathlib.Path(__file__).parent.parent.absolute()
+os.chdir(base_dir)
+sys.path.insert(0, str(base_dir))
 
 from app.models.base import get_db
 from app.models.claim import Claim
