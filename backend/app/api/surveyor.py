@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import desc
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
@@ -67,11 +67,21 @@ async def get_surveyor_inbox(
     Includes SLA calculation (24 hour standard).
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
+    query = db.query(Claim).options(
+        joinedload(Claim.customer),
+        selectinload(Claim.icve_estimates)
+    )
     if status_filter:
-        query = db.query(Claim).filter(Claim.status == status_filter)
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(Claim.status == status_filter)
     else:
         # Default: show both new claims and claims in review
-        query = db.query(Claim).filter(
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(
             Claim.status.in_([ClaimStatus.DRAFT_READY, ClaimStatus.SURVEYOR_REVIEW])
         )
     
@@ -1017,7 +1027,11 @@ async def get_surveyor_overview(
     Calculates summary statistics.
     """
     # Base query - claims reviewed by this surveyor
-    query = db.query(Claim).filter(
+    query = db.query(Claim).options(
+        joinedload(Claim.customer),
+        selectinload(Claim.icve_estimates),
+        selectinload(Claim.state_transitions)
+    ).filter(
         Claim.reviewed_at.isnot(None)
     )
     
@@ -1126,11 +1140,12 @@ async def get_surveyor_overview(
         if latest_icve:
             est_amount = float(latest_icve.total_estimate)
         
-        # Get decision reason from last transition
+        # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
         last_transition = latest_transitions.get(str(claim.id))
         if last_transition:
             decision_reason = last_transition.reason
+
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
             policy_id=claim.policy_id,
@@ -1197,7 +1212,10 @@ async def get_surveyor_reports(
     from app.models.report import ReportDraft
     
     # Base query - all reports
-    query = db.query(ReportDraft).join(Claim, ReportDraft.claim_id == Claim.id)
+    query = db.query(ReportDraft).join(ReportDraft.claim).options(
+        contains_eager(ReportDraft.claim).joinedload(Claim.customer),
+        contains_eager(ReportDraft.claim).selectinload(Claim.icve_estimates)
+    )
     
     # Date range filtering
     if start_date:
