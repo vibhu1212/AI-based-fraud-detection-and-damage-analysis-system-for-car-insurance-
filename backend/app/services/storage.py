@@ -86,6 +86,31 @@ class StorageService:
 
         return target_path
     
+    def _resolve_path(self, object_key: str) -> Path:
+        """
+        Securely resolve and validate file paths to prevent Path Traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object
+
+        Raises:
+            ValueError: If path is invalid or outside storage directory
+        """
+        # Strip leading slashes to prevent absolute path interpretation
+        safe_key = object_key.lstrip('/')
+
+        # Resolve path to canonical form (resolves symlinks and ../)
+        resolved_path = (self.storage_path / safe_key).resolve()
+
+        # Ensure the resolved path is still within our intended storage directory
+        if not resolved_path.is_relative_to(self.storage_path.resolve()):
+            raise ValueError(f"Invalid path: {object_key}")
+
+        return resolved_path
+
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
         Calculate SHA-256 hash of file content.
@@ -173,7 +198,7 @@ class StorageService:
         sha256_hash = self.calculate_sha256(file)
         
         # Determine full path securely
-        file_path = self._get_safe_path(object_key)
+        file_path = self._resolve_path(object_key)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write file
@@ -202,7 +227,7 @@ class StorageService:
             Path object if file exists, None otherwise
         """
         try:
-            file_path = self._get_safe_path(object_key)
+            file_path = self._resolve_path(object_key)
             if file_path.exists():
                 return file_path
         except ValueError:
@@ -241,7 +266,7 @@ class StorageService:
             True if deleted, False if file doesn't exist
         """
         try:
-            file_path = self._get_safe_path(object_key)
+            file_path = self._resolve_path(object_key)
             if file_path.exists():
                 file_path.unlink()
                 return True
@@ -260,7 +285,7 @@ class StorageService:
             True if file exists, False otherwise
         """
         try:
-            file_path = self._get_safe_path(object_key)
+            file_path = self._resolve_path(object_key)
             return file_path.exists()
         except ValueError:
             return False
