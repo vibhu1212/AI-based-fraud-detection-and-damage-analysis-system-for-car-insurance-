@@ -104,11 +104,13 @@ export default function PipelineTestMode({ modules }: Props) {
           tabIndex={0}
           aria-label="Upload image drop zone"
           className="upload-zone"
+          role="button"
+          tabIndex={0}
           onClick={() => fileInput.current?.click()}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              fileInput.current?.click();
+              e.preventDefault()
+              fileInput.current?.click()
             }
           }}
           style={{ padding: '20px', cursor: 'pointer' }}
