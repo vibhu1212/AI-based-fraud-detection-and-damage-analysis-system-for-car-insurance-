@@ -108,7 +108,6 @@ export default function ModuleTestPanel({ module }: Props) {
         <div
           role="button"
           tabIndex={0}
-          aria-label="Upload images drop zone"
           className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
           role="button"
           tabIndex={0}

@@ -102,7 +102,6 @@ export default function PipelineTestMode({ modules }: Props) {
         <div
           role="button"
           tabIndex={0}
-          aria-label="Upload image drop zone"
           className="upload-zone"
           role="button"
           tabIndex={0}
