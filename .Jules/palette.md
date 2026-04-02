@@ -1,0 +1,3 @@
+## 2025-01-20 - Drop zones lacking keyboard accessibility
+**Learning:** Found a pattern where interactive `div` elements acting as file drop zones in React components (`ModuleTestPanel.tsx`, `PipelineTestMode.tsx`) had `onClick` handlers but lacked keyboard accessibility. Users navigating via keyboard could not trigger the file dialog.
+**Action:** When implementing custom interactive components like drop zones using generic elements (`div`, `span`), always ensure they receive keyboard support by adding `role="button"`, `tabIndex={0}`, an `onKeyDown` handler that responds to 'Enter' and 'Space', and visible focus styles (`:focus-visible`).
