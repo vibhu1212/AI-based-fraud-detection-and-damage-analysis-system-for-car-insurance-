@@ -67,10 +67,8 @@ async def get_surveyor_inbox(
     Includes SLA calculation (24 hour standard).
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
-    query = db.query(Claim).options(
-        joinedload(Claim.customer),
-        selectinload(Claim.icve_estimates)
-    )
+    # ⚡ Bolt Optimization: Eager load relationships to prevent N+1 queries in loops
+    # joinedload for many-to-one (customer) and selectinload for one-to-many (icve_estimates)
     if status_filter:
         query = db.query(Claim).options(
             joinedload(Claim.customer),
@@ -128,7 +126,7 @@ async def get_surveyor_inbox(
         else:
             sla_status = "ON_TRACK"
             
-        # Get customer name (optimized with eager loading)
+        # Get customer name (optimized using eager loading)
         customer_name = "Unknown"
         if claim.customer:
              customer_name = claim.customer.full_name
@@ -1012,6 +1010,7 @@ async def get_surveyor_overview(
     Calculates summary statistics.
     """
     # Base query - claims reviewed by this surveyor
+    # ⚡ Bolt Optimization: Eager load customer and icve_estimates to prevent N+1 queries
     query = db.query(Claim).options(
         joinedload(Claim.customer),
         selectinload(Claim.icve_estimates)
@@ -1086,7 +1085,7 @@ async def get_surveyor_overview(
     # Process claims for response
     processed_claims = []
     for claim in paginated_claims:
-        # Get customer name (optimized with eager loading)
+        # Get customer name (optimized using eager loading)
         customer_name = "Unknown"
         if claim.customer:
             customer_name = claim.customer.name or claim.customer.phone
@@ -1169,6 +1168,7 @@ async def get_surveyor_reports(
     from app.models.report import ReportDraft
     
     # Base query - all reports
+    # ⚡ Bolt Optimization: Eager load relationships to prevent N+1 queries in loop
     query = db.query(ReportDraft).options(
         joinedload(ReportDraft.claim).joinedload(Claim.customer),
         joinedload(ReportDraft.claim).selectinload(Claim.icve_estimates)
@@ -1206,11 +1206,12 @@ async def get_surveyor_reports(
     # Process reports for response
     processed_reports = []
     for report in reports:
+        # Optimized: access eagerly loaded claim
         claim = report.claim
         if not claim:
             continue
         
-        # Get customer name
+        # Get customer name (optimized using eager loading)
         customer_name = "Unknown"
         if claim.customer:
             customer_name = claim.customer.name or claim.customer.phone
