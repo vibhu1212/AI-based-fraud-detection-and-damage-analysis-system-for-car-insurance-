@@ -35,6 +35,14 @@ function App() {
     setCurrentView('module')
   }, [])
 
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      action()
+    }
+  }, [])
+
   const renderContent = () => {
     switch (currentView) {
       case 'overview':
@@ -64,6 +72,8 @@ function App() {
 
         {/* Navigation */}
         <div
+          role="button"
+          tabIndex={0}
           className={`sidebar-item ${currentView === 'overview' ? 'active' : ''}`}
           onClick={() => setCurrentView('overview')}
           role="button"
@@ -79,6 +89,8 @@ function App() {
           Overview
         </div>
         <div
+          role="button"
+          tabIndex={0}
           className={`sidebar-item ${currentView === 'pipeline' ? 'active' : ''}`}
           onClick={() => setCurrentView('pipeline')}
           role="button"
@@ -94,6 +106,8 @@ function App() {
           Pipeline Test
         </div>
         <div
+          role="button"
+          tabIndex={0}
           className={`sidebar-item ${currentView === 'benchmark' ? 'active' : ''}`}
           onClick={() => setCurrentView('benchmark')}
           role="button"
@@ -115,6 +129,8 @@ function App() {
         </div>
         {MODULES.map(mod => (
           <div
+            role="button"
+            tabIndex={0}
             key={mod.id}
             className={`sidebar-item ${currentView === 'module' && selectedModule === mod.id ? 'active' : ''}`}
             onClick={() => handleModuleSelect(mod.id)}

@@ -32,6 +32,32 @@ class StorageService:
         ]
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
+
+    def _get_safe_path(self, object_key: str) -> Path:
+        """
+        Resolve path safely and prevent path traversal.
+
+        Args:
+            object_key: The requested path/key
+
+        Returns:
+            Resolved safe Path
+
+        Raises:
+            ValueError: If path is not relative to storage directory
+        """
+        # Clean leading slashes
+        clean_key = str(object_key).lstrip('/')
+
+        # Resolve full target path
+        target_path = (self.storage_path / clean_key).resolve()
+
+        # Ensure path is within storage directory
+        if not target_path.is_relative_to(self.storage_path.resolve()):
+            raise ValueError("Invalid path: Path traversal detected")
+
+        return target_path
+
     
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
@@ -70,6 +96,29 @@ class StorageService:
         safe_filename = "".join(c for c in filename if c.isalnum() or c in "._-")
         return f"{folder}/{claim_id}/{timestamp}_{safe_filename}"
     
+    def _get_safe_path(self, object_key: str) -> Path:
+        """
+        Resolve path securely to prevent directory traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object
+
+        Raises:
+            ValueError: If path traversal attempt detected
+        """
+        base_path = self.storage_path.resolve()
+        # Remove leading slashes to prevent absolute path interpretation
+        safe_key = object_key.lstrip('/')
+        file_path = (self.storage_path / safe_key).resolve()
+
+        if not file_path.is_relative_to(base_path):
+            raise ValueError("Path traversal attempt detected")
+
+        return file_path
+
     def upload_file(
         self,
         file: BinaryIO,
@@ -90,8 +139,8 @@ class StorageService:
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
-        # Determine full path
-        file_path = self.storage_path / object_key
+        # Determine full path safely
+        file_path = self._get_safe_path(object_key)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write file
@@ -119,7 +168,7 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        file_path = self.storage_path / object_key
+        file_path = self._get_safe_path(object_key)
         if file_path.exists():
             return file_path
         return None
@@ -155,7 +204,7 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        file_path = self.storage_path / object_key
+        file_path = self._get_safe_path(object_key)
         if file_path.exists():
             file_path.unlink()
             return True
@@ -171,7 +220,7 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        file_path = self.storage_path / object_key
+        file_path = self._get_safe_path(object_key)
         return file_path.exists()
     
     def store_pdf(self, pdf_bytes: bytes, filename: str) -> str:
@@ -190,7 +239,7 @@ class StorageService:
         reports_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate file path
-        file_path = reports_dir / filename
+        file_path = self._get_safe_path(f"reports/{filename}")
         
         # Write PDF file
         with open(file_path, "wb") as f:

@@ -145,6 +145,12 @@ body {
   border-color: rgba(124, 58, 237, 0.3);
 }
 
+.sidebar-item:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: -2px;
+  background: var(--bg-card);
+}
+
 .sidebar-item .module-tag {
   font-size: 10px;
   font-weight: 700;
@@ -235,9 +241,12 @@ body {
 }
 
 .upload-zone:hover,
+.upload-zone:focus-visible,
 .upload-zone.drag-over {
   border-color: var(--accent-purple);
   background: rgba(124, 58, 237, 0.05);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-purple);
 }
 
 .upload-zone .upload-icon {
@@ -285,6 +294,11 @@ body {
   border: none;
   transition: all 0.2s ease;
   font-family: inherit;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
 }
 
 .btn-primary {
@@ -491,6 +505,11 @@ body {
   animation: pulse-border 1.5s infinite ease-in-out;
 }
 
+.pipeline-node:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
+}
+
 @keyframes pulse-border {
   0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3); }
   50% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
@@ -565,6 +584,11 @@ body {
 .toggle.active {
   background: var(--accent-purple);
   border-color: var(--accent-purple);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
 }
 
 .toggle::after {
@@ -688,7 +712,14 @@ body {
   box-shadow: var(--shadow-glow);
 }
 
-.module-overview-card:hover::before {
+.module-overview-card:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+.module-overview-card:hover::before,
+.module-overview-card:focus-visible::before {
   opacity: 1;
 }
 
