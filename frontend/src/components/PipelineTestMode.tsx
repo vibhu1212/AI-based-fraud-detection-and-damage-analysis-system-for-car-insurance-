@@ -21,6 +21,13 @@ interface PipelineStep {
 const API_BASE = 'http://localhost:8000/api'
 
 export default function PipelineTestMode({ modules }: Props) {
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      action()
+    }
+  }
+
   const [enabledModules, setEnabledModules] = useState<Set<string>>(
     new Set(['M0', 'M2', 'M4', 'M6', 'M7'])
   )
@@ -97,6 +104,8 @@ export default function PipelineTestMode({ modules }: Props) {
           tabIndex={0}
           aria-label="Upload image for pipeline"
           className="upload-zone"
+          role="button"
+          tabIndex={0}
           onClick={() => fileInput.current?.click()}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -143,11 +152,14 @@ export default function PipelineTestMode({ modules }: Props) {
           {modules.map((mod, i) => (
             <div key={mod.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div
+                role="button"
+                tabIndex={0}
                 className={`pipeline-node ${enabledModules.has(mod.id) ? 'enabled' : ''} ${
                   steps.find(s => s.moduleId === mod.id)?.status === 'completed' ? 'completed' :
                   steps.find(s => s.moduleId === mod.id)?.status === 'running' ? 'active' : ''
                 }`}
                 onClick={() => !isRunning && toggleModule(mod.id)}
+                onKeyDown={(e) => !isRunning && handleKeyDown(e, () => toggleModule(mod.id))}
               >
                 {mod.icon} {mod.id}
               </div>
@@ -161,6 +173,7 @@ export default function PipelineTestMode({ modules }: Props) {
             className="btn btn-primary"
             onClick={runPipeline}
             disabled={isRunning || enabledModules.size === 0 || !image}
+            aria-busy={isRunning}
           >
             {isRunning ? (
               <>
