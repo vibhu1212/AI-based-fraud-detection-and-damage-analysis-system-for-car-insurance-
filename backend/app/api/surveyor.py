@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload, contains_eager
 from sqlalchemy import desc
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
@@ -1100,9 +1100,8 @@ async def get_surveyor_overview(
         # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
         if claim.state_transitions:
-            last_transition = sorted(claim.state_transitions, key=lambda t: t.created_at, reverse=True)[0]
-            if last_transition:
-                decision_reason = last_transition.reason
+            last_transition = sorted(claim.state_transitions, key=lambda x: x.created_at, reverse=True)[0]
+            decision_reason = last_transition.reason
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
             policy_id=claim.policy_id,
@@ -1170,8 +1169,8 @@ async def get_surveyor_reports(
     
     # Base query - all reports
     query = db.query(ReportDraft).join(Claim, ReportDraft.claim_id == Claim.id).options(
-        joinedload(ReportDraft.claim).joinedload(Claim.customer),
-        joinedload(ReportDraft.claim).selectinload(Claim.icve_estimates)
+        contains_eager(ReportDraft.claim).joinedload(Claim.customer),
+        contains_eager(ReportDraft.claim).selectinload(Claim.icve_estimates)
     )
     
     # Date range filtering
