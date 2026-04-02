@@ -1,3 +1,5 @@
-## 2024-03-23 - Surveyor Dashboard N+1 Queries
-**Learning:** The dashboard endpoints (`get_surveyor_inbox`, `get_surveyor_overview`, and `get_surveyor_reports`) fetching lists of claims were executing N+1 queries when accessing `claim.customer`, `claim.icve_estimates`, and `claim.state_transitions` inside Python loops.
-**Action:** Use `joinedload` for one-to-one/many-to-one relationships (like `Claim.customer`) and `selectinload` for collection relationships (like `Claim.icve_estimates`, `Claim.state_transitions`) on the initial query before iterating over the results. Also ensure to replace explicit `db.query()` lookups inside the loop with accesses to the preloaded relationships.
+## 2024-03-24 - Eager Loading Relationships in SQLAlchemy
+
+**Learning:** When retrieving collections in SQLAlchemy, querying related objects (like a user's `Claim` entities, along with the `User` and `ICVEEstimate` relationships) inside a loop causes a severe N+1 query problem that drastically affects backend performance.
+
+**Action:** Always proactively review loops iterating over SQLAlchemy models for related object accesses. Replace lazy-loading approaches inside loops by modifying the initial query to use eager loading: `joinedload` for many-to-one/one-to-one relationships to prevent Cartesian products, and `selectinload` for one-to-many collection relationships.

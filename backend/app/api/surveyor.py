@@ -72,10 +72,10 @@ async def get_surveyor_inbox(
         selectinload(Claim.icve_estimates)
     )
     if status_filter:
-        query = query.filter(Claim.status == status_filter)
+        query = db.query(Claim).options(joinedload(Claim.customer), selectinload(Claim.icve_estimates)).filter(Claim.status == status_filter)
     else:
         # Default: show both new claims and claims in review
-        query = query.filter(
+        query = db.query(Claim).options(joinedload(Claim.customer), selectinload(Claim.icve_estimates)).filter(
             Claim.status.in_([ClaimStatus.DRAFT_READY, ClaimStatus.SURVEYOR_REVIEW])
         )
     
