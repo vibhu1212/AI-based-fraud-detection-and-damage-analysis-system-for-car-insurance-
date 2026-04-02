@@ -16,6 +16,13 @@ interface Props {
 const API_BASE = 'http://localhost:8000/api'
 
 export default function ModuleTestPanel({ module }: Props) {
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      action()
+    }
+  }
+
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -160,6 +167,7 @@ export default function ModuleTestPanel({ module }: Props) {
           className="btn btn-primary"
           onClick={processModule}
           disabled={images.length === 0 || isProcessing}
+          aria-busy={isProcessing}
         >
           {isProcessing ? (
             <><span className="loading-spinner" />Processing...</>
@@ -197,7 +205,7 @@ export default function ModuleTestPanel({ module }: Props) {
             <div className="results-header">
               <h4>
                 <span className="status-badge ready"><span className="status-dot" /> Success</span>
-                {module.id} · {r.filename as string} ({r.processing_time_ms as number}ms)
+                {module.id} · {String(r.filename)} ({String(r.processing_time_ms)}ms)
               </h4>
               <button
                 className="btn btn-secondary"
@@ -252,7 +260,7 @@ export default function ModuleTestPanel({ module }: Props) {
                       <div className="metric-value">
                         {typeof value === 'number' && value < 1 && value > 0
                           ? `${(value * 100).toFixed(1)}%`
-                          : key.includes('time') || key.includes('ms') ? `${value}ms` : String(value)}
+                          : key.includes('time') || key.includes('ms') ? `${String(value)}ms` : String(value)}
                       </div>
                       <div className="metric-label">{key.replace(/_/g, ' ')}</div>
                     </div>
