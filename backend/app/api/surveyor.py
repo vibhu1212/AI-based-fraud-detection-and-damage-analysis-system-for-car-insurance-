@@ -128,10 +128,8 @@ async def get_surveyor_inbox(
         else:
             sla_status = "ON_TRACK"
             
-        # Get customer name (optimized using eager loading)
-        customer_name = "Unknown"
-        if claim.customer:
-             customer_name = claim.customer.full_name
+        # Get customer name
+        customer_name = claim.customer.full_name if claim.customer else "Unknown"
         
         # Get estimate total
         est_amount = 0.0
@@ -1087,10 +1085,8 @@ async def get_surveyor_overview(
     # Process claims for response
     processed_claims = []
     for claim in paginated_claims:
-        # Get customer name (optimized using eager loading)
-        customer_name = "Unknown"
-        if claim.customer:
-            customer_name = claim.customer.name or claim.customer.phone
+        # Get customer name
+        customer_name = claim.customer.name or claim.customer.phone if claim.customer else "Unknown"
         
         # Get estimate total
         est_amount = 0.0
@@ -1100,7 +1096,7 @@ async def get_surveyor_overview(
         # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
         if claim.state_transitions:
-            last_transition = sorted(claim.state_transitions, key=lambda x: x.created_at, reverse=True)[0]
+            last_transition = max(claim.state_transitions, key=lambda t: t.created_at)
             decision_reason = last_transition.reason
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
@@ -1168,7 +1164,7 @@ async def get_surveyor_reports(
     from app.models.report import ReportDraft
     
     # Base query - all reports
-    query = db.query(ReportDraft).join(Claim, ReportDraft.claim_id == Claim.id).options(
+    query = db.query(ReportDraft).join(ReportDraft.claim).options(
         contains_eager(ReportDraft.claim).joinedload(Claim.customer),
         contains_eager(ReportDraft.claim).selectinload(Claim.icve_estimates)
     )
@@ -1209,10 +1205,8 @@ async def get_surveyor_reports(
         if not claim:
             continue
         
-        # Get customer name (optimized using eager loading)
-        customer_name = "Unknown"
-        if claim.customer:
-            customer_name = claim.customer.name or claim.customer.phone
+        # Get customer name
+        customer_name = claim.customer.name or claim.customer.phone if claim.customer else "Unknown"
         
         # Get estimate total
         est_amount = 0.0
