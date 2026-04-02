@@ -156,6 +156,7 @@ export default function ModuleTestPanel({ module }: Props) {
                     fontSize: 13, lineHeight: '22px', textAlign: 'center', padding: 0,
                   }}
                   title="Remove image"
+                  aria-label="Remove image"
                 >✕</button>
               </div>
             ))}
