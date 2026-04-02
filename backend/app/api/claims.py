@@ -2,11 +2,12 @@
 Claim management endpoints for customers.
 """
 from fastapi import APIRouter, HTTPException, Depends, status, Query, UploadFile, File, Form
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import List, Optional
 from uuid import UUID
 from datetime import date, timedelta
 from PIL import Image
+from concurrent.futures import ThreadPoolExecutor
 import io
 from app.models.base import get_db
 from app.models.user import User
@@ -153,7 +154,10 @@ async def get_customer_dashboard(
     from datetime import datetime, timedelta
     
     # Query all customer's claims
-    all_claims = db.query(Claim).filter(
+    # Eagerly load icve_estimates to prevent N+1 query problem when generating summaries
+    all_claims = db.query(Claim).options(
+        selectinload(Claim.icve_estimates)
+    ).filter(
         Claim.customer_id == str(current_user.id)
     ).order_by(Claim.created_at.desc()).all()
     
@@ -231,7 +235,7 @@ async def get_my_claims(
     """
     Get all claims for the logged-in customer.
     """
-    claims = db.query(Claim).filter(
+    claims = db.query(Claim).options(selectinload(Claim.icve_estimates)).filter(
         Claim.customer_id == str(current_user.id)
     ).order_by(Claim.created_at.desc()).all()
     return claims
@@ -292,7 +296,7 @@ async def list_claims(
     from app.models.enums import UserRole
     
     # Build query based on role
-    query = db.query(Claim)
+    query = db.query(Claim).options(selectinload(Claim.icve_estimates))
     
     if current_user.role == UserRole.CUSTOMER:
         query = query.filter(Claim.customer_id == str(current_user.id))
@@ -596,18 +600,18 @@ async def delete_claim(
     
     # 1. Delete audit events
     from app.models.audit import AuditEvent, RiskAssessment
-    db.query(AuditEvent).filter(AuditEvent.claim_id == claim_id_str).delete()
+    db.query(AuditEvent).filter(AuditEvent.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 2. Delete risk assessments
-    db.query(RiskAssessment).filter(RiskAssessment.claim_id == claim_id_str).delete()
+    db.query(RiskAssessment).filter(RiskAssessment.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 3. Delete duplicate check results
     from app.models.damage import DuplicateCheckResult
-    db.query(DuplicateCheckResult).filter(DuplicateCheckResult.claim_id == claim_id_str).delete()
+    db.query(DuplicateCheckResult).filter(DuplicateCheckResult.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 4. Delete damages
     from app.models.damage import DamageDetection
-    db.query(DamageDetection).filter(DamageDetection.claim_id == claim_id_str).delete()
+    db.query(DamageDetection).filter(DamageDetection.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 5. Delete ICVE estimates and line items
     from app.models.icve import ICVEEstimate, ICVELineItem
@@ -619,7 +623,7 @@ async def delete_claim(
     
     # 6. Delete AI artifacts
     from app.models.report import AIArtifact
-    db.query(AIArtifact).filter(AIArtifact.claim_id == claim_id_str).delete()
+    db.query(AIArtifact).filter(AIArtifact.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 7. Delete media files from storage and database
     # Optimization: Fetch only object keys and parallelize deletion from storage
@@ -640,11 +644,11 @@ async def delete_claim(
     
     # 8. Delete report drafts
     from app.models.report import ReportDraft
-    db.query(ReportDraft).filter(ReportDraft.claim_id == claim_id_str).delete()
+    db.query(ReportDraft).filter(ReportDraft.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 9. Delete state transitions (already has cascade in model, but explicit is safer)
     from app.models.claim import ClaimStateTransition
-    db.query(ClaimStateTransition).filter(ClaimStateTransition.claim_id == claim_id_str).delete()
+    db.query(ClaimStateTransition).filter(ClaimStateTransition.claim_id == claim_id_str).delete(synchronize_session=False)
     
     # 10. Finally, delete the claim itself
     db.delete(claim)
