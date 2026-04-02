@@ -1,0 +1,3 @@
+## 2026-03-31 - Interactive Elements and Keyboard Accessibility
+**Learning:** The frontend uses several custom interactive components (like `<div className="upload-zone">`) with `onClick` handlers, but lacks native keyboard accessibility (focus states, tab order, `onKeyDown`). This is a common pattern in the codebase that makes features inaccessible to keyboard users.
+**Action:** When creating or modifying custom interactive elements (like drop zones or cards acting as buttons), always explicitly add `role="button"`, `tabIndex={0}`, `onKeyDown` (for Enter/Space), and a clear `:focus-visible` state to ensure proper keyboard accessibility.
