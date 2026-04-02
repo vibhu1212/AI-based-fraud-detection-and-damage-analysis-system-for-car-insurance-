@@ -67,6 +67,10 @@ async def get_surveyor_inbox(
     Includes SLA calculation (24 hour standard).
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
+    query = db.query(Claim).options(
+        joinedload(Claim.customer),
+        selectinload(Claim.icve_estimates)
+    )
     if status_filter:
         query = db.query(Claim).options(
             joinedload(Claim.customer),
@@ -1089,7 +1093,7 @@ async def get_surveyor_overview(
         if claim.icve_estimates:
             est_amount = float(claim.icve_estimates[0].total_estimate)
         
-        # Get decision reason from last transition
+        # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
         if claim.state_transitions:
             last_transition = max(claim.state_transitions, key=lambda t: t.created_at)
