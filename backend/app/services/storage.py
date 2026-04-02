@@ -35,29 +35,24 @@ class StorageService:
 
     def _get_safe_path(self, object_key: str) -> Path:
         """
-        Resolve path safely and prevent path traversal.
+        Securely resolve a file path and prevent path traversal.
 
         Args:
-            object_key: The requested path/key
+            object_key: Storage key/path
 
         Returns:
-            Resolved safe Path
+            Resolved Path object
 
         Raises:
-            ValueError: If path is not relative to storage directory
+            ValueError: If path is outside the storage directory
         """
-        # Clean leading slashes
-        clean_key = str(object_key).lstrip('/')
+        target_path = (self.storage_path / object_key).resolve()
+        storage_root = self.storage_path.resolve()
 
-        # Resolve full target path
-        target_path = (self.storage_path / clean_key).resolve()
-
-        # Ensure path is within storage directory
-        if not target_path.is_relative_to(self.storage_path.resolve()):
-            raise ValueError("Invalid path: Path traversal detected")
+        if not target_path.is_relative_to(storage_root):
+            raise ValueError(f"Path traversal detected: {object_key}")
 
         return target_path
-
     
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
@@ -145,6 +140,8 @@ class StorageService:
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
+        # Determine full path
+        file_path = self._get_safe_path(object_key)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write file
@@ -172,13 +169,12 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        base_path = self.storage_path.resolve()
-        file_path = (self.storage_path / object_key).resolve()
-        if not file_path.is_relative_to(base_path):
-            return None
-
-        if file_path.exists():
-            return file_path
+        try:
+            file_path = self._get_safe_path(object_key)
+            if file_path.exists():
+                return file_path
+        except ValueError:
+            pass
         return None
     
     def generate_presigned_url(
@@ -212,14 +208,13 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        base_path = self.storage_path.resolve()
-        file_path = (self.storage_path / object_key).resolve()
-        if not file_path.is_relative_to(base_path):
-            return False
-
-        if file_path.exists():
-            file_path.unlink()
-            return True
+        try:
+            file_path = self._get_safe_path(object_key)
+            if file_path.exists():
+                file_path.unlink()
+                return True
+        except ValueError:
+            pass
         return False
     
     def file_exists(self, object_key: str) -> bool:
@@ -232,12 +227,11 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        base_path = self.storage_path.resolve()
-        file_path = (self.storage_path / object_key).resolve()
-        if not file_path.is_relative_to(base_path):
+        try:
+            file_path = self._get_safe_path(object_key)
+            return file_path.exists()
+        except ValueError:
             return False
-
-        return file_path.exists()
     
     def store_pdf(self, pdf_bytes: bytes, filename: str) -> str:
         """
@@ -250,15 +244,12 @@ class StorageService:
         Returns:
             URL/path to stored PDF
         """
-        # Create reports directory if it doesn't exist
-        reports_dir = self.storage_path / "reports"
-        reports_dir.mkdir(parents=True, exist_ok=True)
+        # Prevent path traversal in filename
+        object_key = f"reports/{filename}"
+        file_path = self._get_safe_path(object_key)
         
-        base_path = self.storage_path.resolve()
-        # Generate file path
-        file_path = (reports_dir / filename).resolve()
-        if not file_path.is_relative_to(base_path):
-            raise ValueError("Invalid PDF filename")
+        # Ensure parent directory exists
+        file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write PDF file
         with open(file_path, "wb") as f:
