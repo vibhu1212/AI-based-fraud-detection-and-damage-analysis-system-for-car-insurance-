@@ -144,8 +144,8 @@ async def get_surveyor_inbox(
             
         # Get customer name
         customer_name = "Unknown"
-        if claim.customer_id and claim.customer_id in users:
-             customer_name = users[claim.customer_id].full_name
+        if claim.customer:
+             customer_name = claim.customer.full_name
         
         # Get estimate total
         est_amount = 0.0

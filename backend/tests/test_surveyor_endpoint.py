@@ -3,12 +3,12 @@ Test script to debug surveyor endpoint 500 error
 """
 import sys
 import os
+import pathlib
 
 # Change to backend directory
-import pathlib
-base_dir = pathlib.Path(__file__).parent.parent.absolute()
-os.chdir(base_dir)
-sys.path.insert(0, str(base_dir))
+backend_dir = str(pathlib.Path(__file__).parent.parent.absolute())
+os.chdir(backend_dir)
+sys.path.insert(0, backend_dir)
 
 from app.models.base import get_db
 from app.models.claim import Claim
