@@ -13,6 +13,13 @@ interface Props {
 }
 
 export default function OverviewDashboard({ modules, onModuleSelect }: Props) {
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      action()
+    }
+  }
+
   return (
     <div className="module-test-panel">
       <div className="page-header">
@@ -61,8 +68,11 @@ export default function OverviewDashboard({ modules, onModuleSelect }: Props) {
           {modules.map((mod, i) => (
             <div key={mod.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div
+                role="button"
+                tabIndex={0}
                 className="pipeline-node enabled"
                 onClick={() => onModuleSelect(mod.id)}
+                onKeyDown={(e) => handleKeyDown(e, () => onModuleSelect(mod.id))}
                 style={{ cursor: 'pointer' }}
               >
                 {mod.icon} {mod.id}
@@ -81,9 +91,12 @@ export default function OverviewDashboard({ modules, onModuleSelect }: Props) {
       <div className="overview-grid">
         {modules.map(mod => (
           <div
+            role="button"
+            tabIndex={0}
             key={mod.id}
             className="module-overview-card"
             onClick={() => onModuleSelect(mod.id)}
+            onKeyDown={(e) => handleKeyDown(e, () => onModuleSelect(mod.id))}
           >
             <div className="module-id">{mod.id}</div>
             <h4>{mod.icon} {mod.name}</h4>
