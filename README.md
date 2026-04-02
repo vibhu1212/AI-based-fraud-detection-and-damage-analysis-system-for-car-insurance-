@@ -130,7 +130,7 @@ The frontend is a **developer/researcher tool** (not a user-facing app) for:
 - Custom Indian vehicle dataset (Combined from Kaggle and real-world local surveyor data)
 - CarDD + COCO-Vehicles (damage/parts via Kaggle)
 - FaceForensics++ + DEFACTO (fraud)
-- Real surveyor damage estimates and reports
+- Real surveyor damage estimates , damaged car images and reports
 
 ---
 
