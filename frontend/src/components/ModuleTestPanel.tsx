@@ -110,7 +110,8 @@ export default function ModuleTestPanel({ module }: Props) {
           tabIndex={0}
           aria-label="Upload images drop zone"
           className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
-          style={{ outlineColor: 'var(--accent-purple)', outlineOffset: '2px' }}
+          role="button"
+          tabIndex={0}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
@@ -121,6 +122,7 @@ export default function ModuleTestPanel({ module }: Props) {
               fileInput.current?.click()
             }
           }}
+          style={{ outline: 'none' }}
         >
           <div className="upload-icon">📷</div>
           <h4>Drop images here or click to upload</h4>

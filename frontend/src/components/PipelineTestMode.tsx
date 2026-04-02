@@ -113,7 +113,7 @@ export default function PipelineTestMode({ modules }: Props) {
               fileInput.current?.click()
             }
           }}
-          style={{ padding: '20px', cursor: 'pointer', outlineColor: 'var(--accent-purple)', outlineOffset: '2px' }}
+          style={{ padding: '20px', cursor: 'pointer', outline: 'none' }}
         >
           <div className="upload-icon">📷</div>
           <h4>{image ? `✅ ${image.name}` : 'Click to upload an image for the pipeline'}</h4>
