@@ -1,0 +1,3 @@
+## 2024-03-23 - Surveyor Dashboard N+1 Queries
+**Learning:** The dashboard endpoints (`get_surveyor_inbox`, `get_surveyor_overview`, and `get_surveyor_reports`) fetching lists of claims were executing N+1 queries when accessing `claim.customer`, `claim.icve_estimates`, and `claim.state_transitions` inside Python loops.
+**Action:** Use `joinedload` for one-to-one/many-to-one relationships (like `Claim.customer`) and `selectinload` for collection relationships (like `Claim.icve_estimates`, `Claim.state_transitions`) on the initial query before iterating over the results. Also ensure to replace explicit `db.query()` lookups inside the loop with accesses to the preloaded relationships.
