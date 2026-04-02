@@ -265,6 +265,11 @@ body {
   box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
 }
 
+.upload-zone:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
+}
+
 .upload-zone .upload-icon {
   font-size: 48px;
   margin-bottom: 12px;

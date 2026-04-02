@@ -117,8 +117,8 @@ export default function ModuleTestPanel({ module }: Props) {
           onClick={() => fileInput.current?.click()}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              fileInput.current?.click()
+              e.preventDefault();
+              fileInput.current?.click();
             }
           }}
         >
