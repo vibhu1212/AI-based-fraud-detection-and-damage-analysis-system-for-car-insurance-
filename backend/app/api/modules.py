@@ -14,7 +14,7 @@ from typing import List
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-NOT_AVAILABLE = {"status": "not_available", "message": "Module not yet implemented — coming in Phase 2"}
+DEFERRED = {"status": "deferred", "message": "Module deferred to later phase (Fraud Detection / 3D Depth)"}
 
 VALID_MODULES = {"M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7"}
 
@@ -60,7 +60,7 @@ async def process_module(module_id: str, files: List[UploadFile] = File(...)):
         start = time.time()
 
         try:
-            output = await _dispatch(module_id, data)
+            output = await _dispatch(module_id, data) # type: ignore
         except Exception as e:
             logger.exception(f"[{module_id}] Failed: {e}")
             output = {"status": "error", "message": str(e)}
@@ -81,10 +81,18 @@ async def _dispatch(module_id: str, data: bytes) -> dict:
         return _run_m0(data)
     elif module_id == "M2":
         return _run_m2(data)
+    elif module_id == "M3":
+        return _run_m3(data)
+    elif module_id == "M4":
+        return _run_m4(data)
     elif module_id == "M6":
         return _run_m6()
+    elif module_id == "M7":
+        return _run_m7(data)
+    elif module_id in ("M1", "M5"):
+        return DEFERRED
     else:
-        return NOT_AVAILABLE
+        return DEFERRED
 
 
 def _run_m0(data: bytes) -> dict:
@@ -118,8 +126,39 @@ def _run_m2(data: bytes) -> dict:
             return {"status": "model_not_found", "message": "Vehicle classifier model weights not loaded. Train or download the model first."}
         result["status"] = "success"
         return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
     finally:
         Path(tmp_path).unlink(missing_ok=True)
+
+
+def _run_m3(data: bytes) -> dict:
+    """M3 — Part Segmentation."""
+    from app.services.part_segmenter import PartSegmenter
+
+    img = _read_image(data)
+    segmenter = PartSegmenter()
+    result = segmenter.segment(img)
+    result["status"] = "success"
+    return result
+
+
+def _run_m4(data: bytes) -> dict:
+    """M4 — Damage Detection + Classification + Severity."""
+    from app.services.damage_analyzer import DamageAnalyzer
+    from app.services.part_segmenter import PartSegmenter
+
+    img = _read_image(data)
+
+    # Run M3 first to get parts (for damage-to-part assignment)
+    segmenter = PartSegmenter()
+    parts_result = segmenter.segment(img)
+
+    # Run damage analysis
+    analyzer = DamageAnalyzer()
+    result = analyzer.analyze(img, parts=parts_result.get("parts", []))
+    result["status"] = "success"
+    return result
 
 
 def _run_m6() -> dict:
@@ -133,3 +172,25 @@ def _run_m6() -> dict:
         vehicle_info=vehicle,
     )
     return {"status": "success", **estimate.__dict__}
+
+
+def _run_m7(data: bytes) -> dict:
+    """M7 — Report Generation (runs M0→M2→M3→M4→M6 internally for single-image test)."""
+    from app.pipeline.orchestrator import PipelineOrchestrator
+
+    img = _read_image(data)
+    orchestrator = PipelineOrchestrator()
+    result = orchestrator.run(img)
+
+    # Return the report section plus a summary
+    return {
+        "status": result.get("status", "success"),
+        "report": result.get("report", {}),
+        "damages_found": len(result.get("damages", [])),
+        "severity": result.get("severity", {}),
+        "cost": result.get("cost", {}),
+        "total_time_ms": result.get("total_time_ms", 0),
+        "modules_executed": result.get("modules_executed", []),
+        "modules_failed": result.get("modules_failed", []),
+    }
+
