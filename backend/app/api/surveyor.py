@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session, joinedload, selectinload, contains_eager
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import desc
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
@@ -1086,7 +1086,9 @@ async def get_surveyor_overview(
     processed_claims = []
     for claim in paginated_claims:
         # Get customer name
-        customer_name = claim.customer.name or claim.customer.phone if claim.customer else "Unknown"
+        customer_name = "Unknown"
+        if claim.customer:
+            customer_name = claim.customer.name or claim.customer.phone or "Unknown"
         
         # Get estimate total
         est_amount = 0.0
@@ -1098,6 +1100,7 @@ async def get_surveyor_overview(
         if claim.state_transitions:
             last_transition = max(claim.state_transitions, key=lambda t: t.created_at)
             decision_reason = last_transition.reason
+
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
             policy_id=claim.policy_id,
