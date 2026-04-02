@@ -1,3 +1,3 @@
-## 2023-10-27 - Eager Loading Collections with SQLAlchemy
-**Learning:** Using `joinedload` on one-to-many collection relationships (like `Claim.icve_estimates`) inside paginated queries causes SQLAlchemy to produce a `LEFT OUTER JOIN` that multiplies rows. If `.limit()` and `.offset()` are applied, it limits the joined rows, truncating the collection results.
-**Action:** Use `selectinload` for all collection relationships when paginating, and reserve `joinedload` for many-to-one relationships (like `Claim.customer`). Use `contains_eager` to attach eager loaded relationships to explicit `.join()` calls.
+## 2024-05-24 - [SQLAlchemy N+1 Query on Collection Relationships]
+**Learning:** In SQLAlchemy, when fetching collection relationships (like `Claim.icve_estimates`) for a list of objects and then iterating over them, it causes severe N+1 query problems.
+**Action:** Always use `selectinload` (instead of `joinedload`) to eager load collection relationships in list queries to prevent the N+1 queries without causing Cartesian product regressions.
