@@ -92,30 +92,23 @@ class StorageService:
         except Exception:
             return None
     
-    def _resolve_path(self, object_key: str) -> Path:
+    def _is_safe_path(self, object_key: str) -> bool:
         """
-        Securely resolve and validate file paths to prevent Path Traversal.
-
-        Args:
-            object_key: Storage key/path
-
-        Returns:
-            Resolved Path object
-
-        Raises:
-            ValueError: If path is invalid or outside storage directory
+        Validate that the object key is safe and doesn't contain path traversal attempts.
         """
-        # Strip leading slashes to prevent absolute path interpretation
-        safe_key = object_key.lstrip('/')
+        if object_key.startswith('/') or object_key.startswith('\\') or ':\\' in object_key:
+            return False
 
-        # Resolve path to canonical form (resolves symlinks and ../)
-        resolved_path = (self.storage_path / safe_key).resolve()
+        parts = object_key.replace('\\', '/').split('/')
+        if '..' in parts:
+            return False
 
-        # Ensure the resolved path is still within our intended storage directory
-        if not resolved_path.is_relative_to(self.storage_path.resolve()):
-            raise ValueError(f"Invalid path: {object_key}")
-
-        return resolved_path
+        try:
+            file_path = (self.storage_path / object_key).resolve()
+            storage_dir = self.storage_path.resolve()
+            return file_path.is_relative_to(storage_dir)
+        except Exception:
+            return False
 
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
@@ -194,10 +187,8 @@ class StorageService:
         Returns:
             Dictionary with upload metadata
         """
-        # Determine and validate full path
-        file_path = self._get_secure_path(object_key)
-        if not file_path:
-            raise ValueError("Invalid object key path (possible Path Traversal)")
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Unsafe object key provided: {object_key}")
 
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
@@ -229,8 +220,11 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        file_path = self._get_secure_path(object_key)
-        if file_path and file_path.exists():
+        if not self._is_safe_path(object_key):
+            return None
+
+        file_path = self.storage_path / object_key
+        if file_path.exists():
             return file_path
         return None
     
@@ -265,8 +259,11 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        file_path = self._get_secure_path(object_key)
-        if file_path and file_path.exists():
+        if not self._is_safe_path(object_key):
+            return False
+
+        file_path = self.storage_path / object_key
+        if file_path.exists():
             file_path.unlink()
             return True
         return False
@@ -281,8 +278,11 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        file_path = self._get_secure_path(object_key)
-        return file_path.exists() if file_path else False
+        if not self._is_safe_path(object_key):
+            return False
+
+        file_path = self.storage_path / object_key
+        return file_path.exists()
     
     def store_pdf(self, pdf_bytes: bytes, filename: str) -> str:
         """

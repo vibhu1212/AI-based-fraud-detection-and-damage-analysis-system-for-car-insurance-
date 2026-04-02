@@ -1,4 +1,5 @@
-## 2024-05-30 - Fix Path Traversal in StorageService
-**Vulnerability:** The `StorageService` used `self.storage_path / object_key` without validation in operations like `upload_file`, `download_file`, `delete_file`, and `file_exists`. This could allow attackers to use `../` or absolute paths to escape the storage directory and access or manipulate arbitrary files on the system.
-**Learning:** `pathlib.Path` concatenation `path / unsafe_input` allows escaping if `unsafe_input` is absolute or contains `../` sequences, making it vulnerable to Path Traversal if the output isn't carefully constrained.
-**Prevention:** Securely resolve user-provided paths using `Path.resolve()` and explicitly check `resolved_file.is_relative_to(resolved_storage)`. Reject absolute path indicators (`/`, `\`, `:\`) early and strip leading slashes before resolution.
+
+## 2025-02-14 - Prevent Path Traversal in Local Storage
+**Vulnerability:** User-provided object keys in StorageService could contain absolute paths, '..', or root directories, potentially exposing paths on the local file system (e.g. `/etc/passwd` or outside the intended `storage` directory) due to insecure handling of file saving/downloading.
+**Learning:** Python's `Path` library is powerful, but when working with unsanitized user-provided paths joined to a directory root, relying purely on default `.resolve()` can unintentionally navigate to system paths outside the root directory. Absolute path patterns need explicitly rejecting before resolution.
+**Prevention:** Implement a layered sanitization approach (`_is_safe_path`): Explicitly reject path traversal sequences (`../`) and absolute paths (`/`, `\`, `:\`). Afterward, use `Path.resolve()` and `Path.is_relative_to()` to definitively bound access to the expected directory.
