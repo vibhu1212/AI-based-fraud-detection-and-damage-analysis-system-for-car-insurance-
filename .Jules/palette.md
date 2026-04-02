@@ -1,3 +1,3 @@
-## 2024-05-24 - Interactive Drop Zones Accessibility
-**Learning:** Custom interactive components like `div` drop zones (`.upload-zone`) need explicit `role="button"`, `tabIndex={0}`, an `onKeyDown` handler (for 'Enter' and 'Space' keys), and `:focus-visible` styles to ensure full keyboard accessibility. Without these, keyboard users cannot interact with the drop zone to upload files.
-**Action:** When creating custom interactive elements, always ensure they are fully navigable and activatable via keyboard, mimicking native button or input behavior.
+## 2024-05-18 - Keyboard Accessibility for Custom Interactive Components
+**Learning:** Custom interactive components like `div` elements functioning as buttons or upload zones need explicit keyboard accessibility attributes. Specifically, they require `role="button"`, `tabIndex={0}`, an `onKeyDown` handler (for "Enter" and "Space"), and `:focus-visible` styles to be accessible to keyboard and screen reader users.
+**Action:** Always verify that any clickable element that is not a native `<button>` or `<a>` tag has full keyboard accessibility implementation including semantic roles, focus management, and keyboard event handling.

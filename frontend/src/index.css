@@ -236,11 +236,12 @@ body {
 }
 
 .upload-zone:hover,
-.upload-zone.drag-over,
-.upload-zone:focus-visible {
+.upload-zone:focus-visible,
+.upload-zone.drag-over {
   border-color: var(--accent-purple);
   background: rgba(124, 58, 237, 0.05);
   outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-purple);
 }
 
 .upload-zone .upload-icon {

@@ -115,8 +115,8 @@ export default function PipelineTestMode({ modules }: Props) {
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              fileInput.current?.click()
+              e.preventDefault();
+              fileInput.current?.click();
             }
           }}
         >

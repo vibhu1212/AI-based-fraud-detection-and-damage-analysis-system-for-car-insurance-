@@ -113,6 +113,8 @@ export default function ModuleTestPanel({ module }: Props) {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInput.current?.click()}
+          role="button"
+          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -216,19 +218,18 @@ export default function ModuleTestPanel({ module }: Props) {
             </div>
 
             {/* PII comparison (M0 only) */}
-            {Boolean(out?.redacted_image_b64) && (
+            {out && Boolean(out.redacted_image_b64) && (
               <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>🔒 PII Masking Result</span>
-                  {out?.pii_found ? (
-                    <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                      ⚠️ {String(out?.faces_detected ?? 0)} face(s) · {String(out?.plates_detected ?? 0)} plate(s) masked
-                    </span>
-                  ) : (
-                    <span style={{ background: '#d1fae5', color: '#065f46', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                      ✅ No PII detected
-                    </span>
-                  )}
+                  {out.pii_found
+                    ? <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        ⚠️ {String(out.faces_detected)} face(s) · {String(out.plates_detected)} plate(s) masked
+                      </span>
+                    : <span style={{ background: '#d1fae5', color: '#065f46', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        ✅ No PII detected
+                      </span>
+                  }
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div>
