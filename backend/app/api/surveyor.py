@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import desc
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
@@ -67,17 +67,14 @@ async def get_surveyor_inbox(
     Includes SLA calculation (24 hour standard).
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
-    # ⚡ Bolt Optimization: Eager load relationships to prevent N+1 queries in loops
-    # joinedload for many-to-one (customer) and selectinload for one-to-many (icve_estimates)
+    # Eagerly load icve_estimates to prevent N+1 queries when calculating estimate total
     if status_filter:
         query = db.query(Claim).options(
-            joinedload(Claim.customer),
             selectinload(Claim.icve_estimates)
         ).filter(Claim.status == status_filter)
     else:
         # Default: show both new claims and claims in review
         query = db.query(Claim).options(
-            joinedload(Claim.customer),
             selectinload(Claim.icve_estimates)
         ).filter(
             Claim.status.in_([ClaimStatus.DRAFT_READY, ClaimStatus.SURVEYOR_REVIEW])
@@ -1010,9 +1007,8 @@ async def get_surveyor_overview(
     Calculates summary statistics.
     """
     # Base query - claims reviewed by this surveyor
-    # ⚡ Bolt Optimization: Eager load customer and icve_estimates to prevent N+1 queries
+    # Eagerly load icve_estimates to prevent N+1 queries when processing overview stats
     query = db.query(Claim).options(
-        joinedload(Claim.customer),
         selectinload(Claim.icve_estimates)
     ).filter(
         Claim.reviewed_at.isnot(None)

@@ -1,3 +1,3 @@
-## 2024-05-18 - SQLAlchemy N+1 Query Bottleneck in Surveyor Endpoints
-**Learning:** Encountered N+1 queries in the `get_surveyor_inbox`, `get_surveyor_overview`, and `get_surveyor_reports` endpoints, specifically due to loops referencing `claim.customer` and `claim.icve_estimates`. This pattern is highly expensive as it initiates multiple queries to the database for every single claim instance fetched. Using `options(joinedload(...))` and `options(selectinload(...))` enables the SQL query planner to use efficient join statements.
-**Action:** When querying collections of objects that reference other relationships within a loop, always use `joinedload` for many-to-one/one-to-one and `selectinload` for one-to-many relationships. Verify no relations are lazily loaded inside endpoint loops unless the loop itself only processes a very small, strictly limited number of records.
+## 2024-05-18 - N+1 Query on ICVE Estimates
+**Learning:** `Claim.icve_estimates` relationship is frequently accessed when iterating over collections of claims (e.g. `get_customer_dashboard`), causing an N+1 query problem. This can be resolved with eager loading.
+**Action:** Use `selectinload` for `icve_estimates` when querying collections of `Claim` objects.
