@@ -102,25 +102,18 @@ export default function PipelineTestMode({ modules }: Props) {
         <div
           role="button"
           tabIndex={0}
+          aria-label="Upload image for pipeline"
           className="upload-zone"
           role="button"
           tabIndex={0}
           onClick={() => fileInput.current?.click()}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              fileInput.current?.click();
+              e.preventDefault()
+              fileInput.current?.click()
             }
           }}
-          style={{ padding: '20px', cursor: 'pointer' }}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              fileInput.current?.click();
-            }
-          }}
+          style={{ padding: '20px', cursor: 'pointer', outlineColor: 'var(--accent-purple)', outlineOffset: '2px' }}
         >
           <div className="upload-icon">📷</div>
           <h4>{image ? `✅ ${image.name}` : 'Click to upload an image for the pipeline'}</h4>

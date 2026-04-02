@@ -1,3 +1,3 @@
-## 2024-05-18 - Interactive Upload Zones Keyboard Accessibility
-**Learning:** React custom interactive components (like div elements acting as upload/drop zones) often lack keyboard support. By adding `role="button"`, `tabIndex={0}`, an `onKeyDown` handler for "Enter" and "Space" keys, and `:focus-visible` styles, we can ensure they are fully accessible to keyboard users while maintaining visual consistency for mouse users.
-**Action:** Always verify keyboard accessibility (`tabIndex={0}`, `onKeyDown`, and focus styles) when creating or updating custom interactive components like drop zones or clickable areas.
+## 2026-03-31 - Interactive Elements and Keyboard Accessibility
+**Learning:** The frontend uses several custom interactive components (like `<div className="upload-zone">`) with `onClick` handlers, but lacks native keyboard accessibility (focus states, tab order, `onKeyDown`). This is a common pattern in the codebase that makes features inaccessible to keyboard users.
+**Action:** When creating or modifying custom interactive elements (like drop zones or cards acting as buttons), always explicitly add `role="button"`, `tabIndex={0}`, `onKeyDown` (for Enter/Space), and a clear `:focus-visible` state to ensure proper keyboard accessibility.
