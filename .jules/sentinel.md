@@ -1,0 +1,4 @@
+## 2024-05-24 - Storage Service Path Traversal
+**Vulnerability:** The StorageService class uses simple path concatenation `self.storage_path / object_key` to resolve file paths without canonicalizing the path and ensuring it stays within the intended `self.storage_path` directory. This allows an attacker to supply an `object_key` containing `../` to access files outside the `storage_path`, leading to Path Traversal vulnerabilities.
+**Learning:** Python's pathlib's `/` operator does not inherently prevent path traversal. If `object_key` is absolute or contains `..`, it can escape the base directory.
+**Prevention:** Always use `Path.resolve()` to get the canonical, absolute path, and then use `Path.is_relative_to(base_path.resolve())` to explicitly verify that the resolved path is safely contained within the intended base directory.

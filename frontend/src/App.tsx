@@ -35,6 +35,14 @@ function App() {
     setCurrentView('module')
   }, [])
 
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      action()
+    }
+  }, [])
+
   const renderContent = () => {
     switch (currentView) {
       case 'overview':
@@ -64,22 +72,52 @@ function App() {
 
         {/* Navigation */}
         <div
+          role="button"
+          tabIndex={0}
           className={`sidebar-item ${currentView === 'overview' ? 'active' : ''}`}
           onClick={() => setCurrentView('overview')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setCurrentView('overview')
+            }
+          }}
         >
           <span className="module-icon">📊</span>
           Overview
         </div>
         <div
+          role="button"
+          tabIndex={0}
           className={`sidebar-item ${currentView === 'pipeline' ? 'active' : ''}`}
           onClick={() => setCurrentView('pipeline')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setCurrentView('pipeline')
+            }
+          }}
         >
           <span className="module-icon">⚡</span>
           Pipeline Test
         </div>
         <div
+          role="button"
+          tabIndex={0}
           className={`sidebar-item ${currentView === 'benchmark' ? 'active' : ''}`}
           onClick={() => setCurrentView('benchmark')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setCurrentView('benchmark')
+            }
+          }}
         >
           <span className="module-icon">📈</span>
           Benchmark (SOTA vs Scratch)
@@ -91,9 +129,19 @@ function App() {
         </div>
         {MODULES.map(mod => (
           <div
+            role="button"
+            tabIndex={0}
             key={mod.id}
             className={`sidebar-item ${currentView === 'module' && selectedModule === mod.id ? 'active' : ''}`}
             onClick={() => handleModuleSelect(mod.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleModuleSelect(mod.id)
+              }
+            }}
           >
             <span className="module-tag" style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa' }}>
               {mod.id}

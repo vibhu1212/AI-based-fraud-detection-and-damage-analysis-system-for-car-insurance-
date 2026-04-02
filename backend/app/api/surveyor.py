@@ -67,6 +67,10 @@ async def get_surveyor_inbox(
     Includes SLA calculation (24 hour standard).
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
+    query = db.query(Claim).options(
+        joinedload(Claim.customer),
+        selectinload(Claim.icve_estimates)
+    )
     if status_filter:
         query = db.query(Claim).options(joinedload(Claim.customer), selectinload(Claim.icve_estimates)).filter(Claim.status == status_filter)
     else:
@@ -118,7 +122,7 @@ async def get_surveyor_inbox(
         else:
             sla_status = "ON_TRACK"
             
-        # Get customer name (mock/lazy)
+        # Get customer name (optimized using eager loading)
         customer_name = "Unknown"
         if claim.customer:
              customer_name = claim.customer.full_name
@@ -1077,7 +1081,7 @@ async def get_surveyor_overview(
     # Process claims for response
     processed_claims = []
     for claim in paginated_claims:
-        # Get customer name
+        # Get customer name (optimized using eager loading)
         customer_name = "Unknown"
         if claim.customer:
             customer_name = claim.customer.name or claim.customer.phone
@@ -1087,11 +1091,12 @@ async def get_surveyor_overview(
         if claim.icve_estimates:
             est_amount = float(claim.icve_estimates[0].total_estimate)
         
-        # Get decision reason from last transition
+        # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
         if claim.state_transitions:
             last_transition = sorted(claim.state_transitions, key=lambda x: x.created_at, reverse=True)[0]
             decision_reason = last_transition.reason
+
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
             policy_id=claim.policy_id,
@@ -1199,7 +1204,7 @@ async def get_surveyor_reports(
         if not claim:
             continue
         
-        # Get customer name
+        # Get customer name (optimized using eager loading)
         customer_name = "Unknown"
         if claim.customer:
             customer_name = claim.customer.name or claim.customer.phone
