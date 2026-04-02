@@ -1,4 +1,7 @@
-## 2024-05-24 - Fix Path Traversal in StorageService
-**Vulnerability:** The `StorageService` used insecure path string concatenation (`self.storage_path / object_key`) to resolve files. A user could supply an `object_key` containing `../` or an absolute path (e.g., `/etc/passwd`) which would allow them to perform a Path Traversal attack, potentially overwriting, downloading, or deleting files outside the intended storage directory.
-**Learning:** Joining untrusted inputs directly to a base `Path` object in `pathlib` can still result in traversing outside the designated directory if the untrusted input contains absolute paths or traversal sequences (`../`).
-**Prevention:** Always securely join user-provided keys by first stripping leading slashes (`key.lstrip('/')`), and then strictly use `Path.resolve()` along with `Path.is_relative_to(intended_storage_path.resolve())` to canonically resolve and boundary-check paths.
+## 2024-05-18 - Path Traversal Vulnerability in Storage Service
+**Vulnerability:** The Storage Service constructed file paths using user-provided strings directly (e.g., `self.storage_path / object_key`) without proper validation, leading to potential path traversal (LFI/RFI) allowing arbitrary file access/deletion.
+**Learning:** Using `pathlib.Path` concatenation (`/`) alone is not sufficient to prevent path traversal when handling unsanitized paths, especially those containing `../` or leading slashes. Absolute paths bypass the intended base directory.
+**Prevention:** To safely handle user-provided paths with `pathlib`:
+1. Strip leading slashes from user input (`path_string.lstrip('/')`).
+2. Construct the full path and securely resolve it `(base_path / safe_string).resolve()`.
+3. Verify that the resolved path originates from the expected root directory using `.is_relative_to(base_path.resolve())`.
