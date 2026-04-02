@@ -76,8 +76,6 @@ function App() {
           tabIndex={0}
           className={`sidebar-item ${currentView === 'overview' ? 'active' : ''}`}
           onClick={() => setCurrentView('overview')}
-          role="button"
-          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault()
@@ -93,8 +91,6 @@ function App() {
           tabIndex={0}
           className={`sidebar-item ${currentView === 'pipeline' ? 'active' : ''}`}
           onClick={() => setCurrentView('pipeline')}
-          role="button"
-          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault()
@@ -110,8 +106,6 @@ function App() {
           tabIndex={0}
           className={`sidebar-item ${currentView === 'benchmark' ? 'active' : ''}`}
           onClick={() => setCurrentView('benchmark')}
-          role="button"
-          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault()
@@ -132,10 +126,10 @@ function App() {
             role="button"
             tabIndex={0}
             key={mod.id}
-            className={`sidebar-item ${currentView === 'module' && selectedModule === mod.id ? 'active' : ''}`}
-            onClick={() => handleModuleSelect(mod.id)}
             role="button"
             tabIndex={0}
+            className={`sidebar-item ${currentView === 'module' && selectedModule === mod.id ? 'active' : ''}`}
+            onClick={() => handleModuleSelect(mod.id)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
