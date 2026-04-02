@@ -18,9 +18,27 @@ class StorageService:
     """
     
     def __init__(self):
-        self.storage_path = Path(settings.STORAGE_PATH)
+        self.storage_path = Path(settings.STORAGE_PATH).resolve()
         self._ensure_directories()
     
+    def _is_safe_path(self, object_key: str) -> bool:
+        """
+        Validate that the object key does not attempt path traversal.
+        """
+        # Reject absolute paths
+        if object_key.startswith('/') or object_key.startswith('\\') or ':\\' in object_key:
+            return False
+
+        # Reject traversal components
+        if '..' in object_key.split('/'):
+            return False
+
+        try:
+            full_path = (self.storage_path / object_key).resolve()
+            return full_path.is_relative_to(self.storage_path)
+        except Exception:
+            return False
+
     def _ensure_directories(self):
         """Create storage directory structure if it doesn't exist."""
         directories = [
@@ -87,6 +105,9 @@ class StorageService:
         Returns:
             Dictionary with upload metadata
         """
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe object key: {object_key}")
+
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
@@ -119,6 +140,9 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe object key: {object_key}")
+
         file_path = self.storage_path / object_key
         if file_path.exists():
             return file_path
@@ -155,6 +179,9 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe object key: {object_key}")
+
         file_path = self.storage_path / object_key
         if file_path.exists():
             file_path.unlink()
@@ -171,6 +198,9 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe object key: {object_key}")
+
         file_path = self.storage_path / object_key
         return file_path.exists()
     
@@ -185,6 +215,10 @@ class StorageService:
         Returns:
             URL/path to stored PDF
         """
+        object_key = f"reports/{filename}"
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe filename: {filename}")
+
         # Create reports directory if it doesn't exist
         reports_dir = self.storage_path / "reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
@@ -197,7 +231,6 @@ class StorageService:
             f.write(pdf_bytes)
         
         # Return URL
-        object_key = f"reports/{filename}"
         return self.generate_presigned_url(object_key)
 
 
