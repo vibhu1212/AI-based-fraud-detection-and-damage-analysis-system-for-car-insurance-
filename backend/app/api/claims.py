@@ -234,7 +234,7 @@ async def get_my_claims(
     """
     Get all claims for the logged-in customer.
     """
-    claims = db.query(Claim).filter(
+    claims = db.query(Claim).options(selectinload(Claim.icve_estimates)).filter(
         Claim.customer_id == str(current_user.id)
     ).order_by(Claim.created_at.desc()).all()
     return claims
@@ -295,7 +295,7 @@ async def list_claims(
     from app.models.enums import UserRole
     
     # Build query based on role
-    query = db.query(Claim)
+    query = db.query(Claim).options(selectinload(Claim.icve_estimates))
     
     if current_user.role == UserRole.CUSTOMER:
         query = query.filter(Claim.customer_id == str(current_user.id))
