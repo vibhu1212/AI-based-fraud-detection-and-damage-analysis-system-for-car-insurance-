@@ -1,73 +1,52 @@
-import unittest
-import io
 import os
-import shutil
+import io
+import sys
+import pytest
 from pathlib import Path
-from unittest.mock import patch
+
+# Add the backend directory to sys.path to resolve imports
+backend_dir = str(Path(__file__).parent.parent.absolute())
+sys.path.insert(0, backend_dir)
+
 from app.services.storage import StorageService
 
-class TestStorageServiceTraversal(unittest.TestCase):
-    def setUp(self):
-        # Create a temporary storage directory for testing
-        self.test_storage_path = Path("./test_storage_dir")
-        self.test_storage_path.mkdir(exist_ok=True)
+# Mock settings for testing
+class MockSettings:
+    STORAGE_PATH = "./test_storage"
 
-        # We need to mock settings.STORAGE_PATH to use our test directory
-        # The mock needs to be active when StorageService is instantiated
-        with patch('app.services.storage.settings') as mock_settings:
-            mock_settings.STORAGE_PATH = str(self.test_storage_path)
-            self.storage_service = StorageService()
+def test_storage_traversal_prevention(monkeypatch):
+    monkeypatch.setattr("app.services.storage.settings", MockSettings())
+    storage = StorageService()
 
-        # Create a dummy file outside the storage directory to attempt to access
-        self.outside_file = Path("./outside_secret.txt")
-        with open(self.outside_file, "w") as f:
-            f.write("secret data")
+    # Test that a valid key works
+    assert storage._is_safe_path("original/123/test.jpg") is True
 
-    def tearDown(self):
-        # Clean up test directories and files
-        if self.test_storage_path.exists():
-            shutil.rmtree(self.test_storage_path)
-        if self.outside_file.exists():
-            self.outside_file.unlink()
+    # Test path traversal attempts
+    assert storage._is_safe_path("../../../etc/passwd") is False
+    assert storage._is_safe_path("/etc/passwd") is False
+    assert storage._is_safe_path("original/123/../../../etc/passwd") is False
+    assert storage._is_safe_path("C:\\Windows\\System32") is False
 
-    def test_secure_path_resolution(self):
-        # Test valid path
-        valid_path = self.storage_service._get_secure_path("original/123/file.jpg")
-        self.assertIsNotNone(valid_path)
-        self.assertTrue(str(valid_path).startswith(str(self.test_storage_path.resolve())))
+    # Ensure upload_file raises ValueError for bad paths
+    with pytest.raises(ValueError, match="Invalid or unsafe object key"):
+        storage.upload_file(io.BytesIO(b"test"), "../../../etc/passwd")
 
-        # Test path traversal attempts
-        traversal_attempts = [
-            "../../../outside_secret.txt",
-            "/etc/passwd",
-            "C:\\Windows\\System32\\cmd.exe",
-            "original/123/../../../../outside_secret.txt",
-            "\\absolute\\path"
-        ]
+    # Ensure download_file raises ValueError for bad paths
+    with pytest.raises(ValueError, match="Invalid or unsafe object key"):
+        storage.download_file("../../../etc/passwd")
 
-        for attempt in traversal_attempts:
-            path = self.storage_service._get_secure_path(attempt)
-            self.assertIsNone(path, f"Path traversal attempt failed to block: {attempt}")
+    # Ensure delete_file raises ValueError for bad paths
+    with pytest.raises(ValueError, match="Invalid or unsafe object key"):
+        storage.delete_file("../../../etc/passwd")
 
-    def test_upload_file_blocks_traversal(self):
-        dummy_file = io.BytesIO(b"test data")
-        with self.assertRaises(ValueError) as context:
-            self.storage_service.upload_file(dummy_file, "../../../outside_secret.txt")
-        self.assertIn("Invalid object key path", str(context.exception))
+    # Ensure file_exists raises ValueError for bad paths
+    with pytest.raises(ValueError, match="Invalid or unsafe object key"):
+        storage.file_exists("../../../etc/passwd")
 
-    def test_download_file_blocks_traversal(self):
-        result = self.storage_service.download_file("../../../outside_secret.txt")
-        self.assertIsNone(result)
+    # Ensure store_pdf raises ValueError for bad paths
+    with pytest.raises(ValueError, match="Invalid or unsafe filename"):
+        storage.store_pdf(b"test pdf", "../../../etc/passwd")
 
-    def test_delete_file_blocks_traversal(self):
-        result = self.storage_service.delete_file("../../../outside_secret.txt")
-        self.assertFalse(result)
-        # Ensure the file was not actually deleted
-        self.assertTrue(self.outside_file.exists())
-
-    def test_file_exists_blocks_traversal(self):
-        result = self.storage_service.file_exists("../../../outside_secret.txt")
-        self.assertFalse(result)
-
-if __name__ == '__main__':
-    unittest.main()
+    # Clean up test directories
+    import shutil
+    shutil.rmtree(MockSettings.STORAGE_PATH, ignore_errors=True)

@@ -21,37 +21,23 @@ class StorageService:
         self.storage_path = Path(settings.STORAGE_PATH).resolve()
         self._ensure_directories()
     
-    def _get_safe_path(self, object_key: str, base_dir: Optional[Path] = None) -> Path:
+    def _is_safe_path(self, object_key: str) -> bool:
         """
-        Securely resolve a path to prevent Path Traversal vulnerabilities.
-
-        Args:
-            object_key: The user-provided path or filename
-            base_dir: The directory the file should be within. Defaults to self.storage_path.
-
-        Returns:
-            Resolved Path object if safe
-
-        Raises:
-            ValueError: If the path attempts to traverse outside the base_dir
+        Validate that the object key does not attempt path traversal.
         """
-        if base_dir is None:
-            base_dir = self.storage_path
+        # Reject absolute paths
+        if object_key.startswith('/') or object_key.startswith('\\') or ':\\' in object_key:
+            return False
 
-        # Ensure base_dir is resolved
-        base_dir = base_dir.resolve()
+        # Reject traversal components
+        if '..' in object_key.split('/'):
+            return False
 
-        # Strip leading slashes from object_key so it doesn't evaluate to root
-        safe_key = str(object_key).lstrip('/')
-
-        # Combine and resolve the path
-        full_path = (base_dir / safe_key).resolve()
-
-        # Verify the resolved path is actually within the intended directory
-        if not full_path.is_relative_to(base_dir):
-            raise ValueError(f"Path traversal detected: {object_key}")
-
-        return full_path
+        try:
+            full_path = (self.storage_path / object_key).resolve()
+            return full_path.is_relative_to(self.storage_path)
+        except Exception:
+            return False
 
     def _ensure_directories(self):
         """Create storage directory structure if it doesn't exist."""
@@ -201,8 +187,8 @@ class StorageService:
         Returns:
             Dictionary with upload metadata
         """
-        # Validate path
-        self._is_safe_path(object_key)
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe object key: {object_key}")
 
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
@@ -234,7 +220,8 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        self._is_safe_path(object_key)
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe object key: {object_key}")
 
         file_path = self.storage_path / object_key
         if file_path.exists():
@@ -274,7 +261,8 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        self._is_safe_path(object_key)
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe object key: {object_key}")
 
         file_path = self.storage_path / object_key
         if file_path.exists():
@@ -292,7 +280,8 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        self._is_safe_path(object_key)
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe object key: {object_key}")
 
         file_path = self.storage_path / object_key
         return file_path.exists()
@@ -309,7 +298,8 @@ class StorageService:
             URL/path to stored PDF
         """
         object_key = f"reports/{filename}"
-        self._is_safe_path(object_key)
+        if not self._is_safe_path(object_key):
+            raise ValueError(f"Invalid or unsafe filename: {filename}")
 
         # Create reports directory if it doesn't exist
         reports_dir = self.storage_path / "reports"
