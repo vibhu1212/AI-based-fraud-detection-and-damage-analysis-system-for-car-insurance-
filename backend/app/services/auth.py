@@ -1,7 +1,7 @@
 """
 Authentication service for OTP and JWT token management.
 """
-import random
+import secrets
 import redis
 from datetime import datetime, timedelta
 from typing import Optional, Dict
@@ -26,12 +26,12 @@ class AuthService:
     @staticmethod
     def generate_otp() -> str:
         """
-        Generate a 6-digit OTP.
+        Generate a cryptographically secure 6-digit OTP.
         
         Returns:
             6-digit OTP string
         """
-        return str(random.randint(100000, 999999))
+        return str(secrets.randbelow(900000) + 100000)
     
     @staticmethod
     def store_otp(phone: str, otp: str) -> bool:
