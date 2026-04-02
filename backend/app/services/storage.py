@@ -96,6 +96,29 @@ class StorageService:
         safe_filename = "".join(c for c in filename if c.isalnum() or c in "._-")
         return f"{folder}/{claim_id}/{timestamp}_{safe_filename}"
     
+    def _get_safe_path(self, object_key: str) -> Path:
+        """
+        Resolve path securely to prevent directory traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object
+
+        Raises:
+            ValueError: If path traversal attempt detected
+        """
+        base_path = self.storage_path.resolve()
+        # Remove leading slashes to prevent absolute path interpretation
+        safe_key = object_key.lstrip('/')
+        file_path = (self.storage_path / safe_key).resolve()
+
+        if not file_path.is_relative_to(base_path):
+            raise ValueError("Path traversal attempt detected")
+
+        return file_path
+
     def upload_file(
         self,
         file: BinaryIO,
@@ -116,7 +139,7 @@ class StorageService:
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
-        # Determine full path
+        # Determine full path safely
         file_path = self._get_safe_path(object_key)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         

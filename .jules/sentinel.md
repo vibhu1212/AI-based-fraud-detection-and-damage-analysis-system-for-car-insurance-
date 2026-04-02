@@ -1,4 +1,4 @@
-## 2025-03-20 - [Path Traversal in File Storage]
-**Vulnerability:** The `StorageService` used string concatenation/basic Path division (`self.storage_path / object_key`) without safely restricting the final resolved path. This allows arbitrary file read/write via path traversal sequences like `../../`.
-**Learning:** Basic path combinations in `pathlib` (like `Path / object_key`) do not prevent `../` sequences from traversing beyond the intended base directory, which exposes a path traversal vulnerability when handling user-controlled file paths.
-**Prevention:** Always canonically resolve the final path using `Path.resolve()` and explicitly verify it remains within the intended base directory using `Path.is_relative_to(base_dir)`. Also, safely strip leading slashes before resolving to avoid accidentally treating the suffix as an absolute path.
+## 2025-02-14 - [Path Traversal in StorageService]
+**Vulnerability:** Path traversal vulnerability in `StorageService` allowed reading/deleting/overwriting arbitrary files outside the intended storage directory by passing payload paths like `../../../etc/passwd` to `download_file`, `upload_file`, `delete_file`, and `file_exists` methods.
+**Learning:** Concatenating user-supplied input to base paths without resolving and verifying the resulting path is a common pattern in Python that leads to directory traversal, especially when using `pathlib.Path` which correctly processes `..` components when concatenated.
+**Prevention:** Strictly use `Path.resolve()` to canonically resolve file paths and `Path.is_relative_to(base_path.resolve())` to ensure the final destination stays within intended bounds before performing any file operations.
