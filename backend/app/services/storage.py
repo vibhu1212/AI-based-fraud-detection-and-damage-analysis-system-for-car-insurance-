@@ -18,9 +18,41 @@ class StorageService:
     """
     
     def __init__(self):
-        self.storage_path = Path(settings.STORAGE_PATH)
+        self.storage_path = Path(settings.STORAGE_PATH).resolve()
         self._ensure_directories()
     
+    def _get_safe_path(self, object_key: str, base_dir: Optional[Path] = None) -> Path:
+        """
+        Securely resolve a path to prevent Path Traversal vulnerabilities.
+
+        Args:
+            object_key: The user-provided path or filename
+            base_dir: The directory the file should be within. Defaults to self.storage_path.
+
+        Returns:
+            Resolved Path object if safe
+
+        Raises:
+            ValueError: If the path attempts to traverse outside the base_dir
+        """
+        if base_dir is None:
+            base_dir = self.storage_path
+
+        # Ensure base_dir is resolved
+        base_dir = base_dir.resolve()
+
+        # Strip leading slashes from object_key so it doesn't evaluate to root
+        safe_key = str(object_key).lstrip('/')
+
+        # Combine and resolve the path
+        full_path = (base_dir / safe_key).resolve()
+
+        # Verify the resolved path is actually within the intended directory
+        if not full_path.is_relative_to(base_dir):
+            raise ValueError(f"Path traversal detected: {object_key}")
+
+        return full_path
+
     def _ensure_directories(self):
         """Create storage directory structure if it doesn't exist."""
         directories = [
@@ -32,7 +64,66 @@ class StorageService:
         ]
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
+
+    def _get_secure_path(self, object_key: str) -> Optional[Path]:
+        """
+        Securely resolve and validate file paths to prevent Path Traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object if secure, None otherwise
+        """
+        try:
+            # Reject absolute path indicators early
+            if object_key.startswith('/') or object_key.startswith('\\') or ':\\' in object_key:
+                return None
+
+            # Resolve both paths to canonical absolute forms
+            resolved_storage = self.storage_path.resolve()
+            resolved_file = (self.storage_path / object_key).resolve()
+
+            # Ensure the resolved file path is within the storage directory
+            if not resolved_file.is_relative_to(resolved_storage):
+                return None
+
+            return resolved_file
+        except Exception:
+            return None
     
+    def _is_safe_path(self, path_str: str) -> bool:
+        """
+        Validate if the provided path is safe and prevents path traversal.
+
+        Args:
+            path_str: The path string to validate
+
+        Returns:
+            True if path is safe, raises ValueError otherwise
+        """
+        if not path_str:
+            raise ValueError("Path cannot be empty")
+
+        # Reject absolute paths and obvious traversal patterns early
+        if path_str.startswith("/") or path_str.startswith("\\") or ":" in path_str:
+            raise ValueError("Absolute paths are not allowed")
+
+        if ".." in path_str.split("/") or ".." in path_str.split("\\"):
+            raise ValueError("Directory traversal components ('..') are not allowed")
+
+        # Ensure the resolved path is within the storage path
+        try:
+            target_path = (self.storage_path / path_str).resolve()
+            base_path = self.storage_path.resolve()
+
+            if not target_path.is_relative_to(base_path):
+                raise ValueError("Path attempts to access outside of storage directory")
+        except Exception as e:
+            raise ValueError(f"Invalid path structure: {str(e)}")
+
+        return True
+
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
         Calculate SHA-256 hash of file content.
@@ -70,6 +161,29 @@ class StorageService:
         safe_filename = "".join(c for c in filename if c.isalnum() or c in "._-")
         return f"{folder}/{claim_id}/{timestamp}_{safe_filename}"
     
+    def _get_safe_path(self, object_key: str) -> Path:
+        """
+        Resolve path securely to prevent directory traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object
+
+        Raises:
+            ValueError: If path traversal attempt detected
+        """
+        base_path = self.storage_path.resolve()
+        # Remove leading slashes to prevent absolute path interpretation
+        safe_key = object_key.lstrip('/')
+        file_path = (self.storage_path / safe_key).resolve()
+
+        if not file_path.is_relative_to(base_path):
+            raise ValueError("Path traversal attempt detected")
+
+        return file_path
+
     def upload_file(
         self,
         file: BinaryIO,
@@ -87,11 +201,12 @@ class StorageService:
         Returns:
             Dictionary with upload metadata
         """
+        # Validate path
+        self._is_safe_path(object_key)
+
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
-        # Determine full path
-        file_path = self.storage_path / object_key
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write file
@@ -119,6 +234,8 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
+        self._is_safe_path(object_key)
+
         file_path = self.storage_path / object_key
         if file_path.exists():
             return file_path
@@ -141,6 +258,8 @@ class StorageService:
         Returns:
             Presigned URL or local path
         """
+        self._is_safe_path(object_key)
+
         # For demo/local storage, return API endpoint path
         # In production with S3, this would generate actual presigned URL
         return f"/api/storage/{object_key}"
@@ -155,6 +274,8 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
+        self._is_safe_path(object_key)
+
         file_path = self.storage_path / object_key
         if file_path.exists():
             file_path.unlink()
@@ -171,6 +292,8 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
+        self._is_safe_path(object_key)
+
         file_path = self.storage_path / object_key
         return file_path.exists()
     
@@ -185,19 +308,21 @@ class StorageService:
         Returns:
             URL/path to stored PDF
         """
+        object_key = f"reports/{filename}"
+        self._is_safe_path(object_key)
+
         # Create reports directory if it doesn't exist
         reports_dir = self.storage_path / "reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate file path
-        file_path = reports_dir / filename
+        file_path = self.storage_path / object_key
         
         # Write PDF file
         with open(file_path, "wb") as f:
             f.write(pdf_bytes)
         
         # Return URL
-        object_key = f"reports/{filename}"
         return self.generate_presigned_url(object_key)
 
 
