@@ -1,0 +1,3 @@
+## 2024-03-18 - Keyboard Accessibility for Upload Zones
+**Learning:** In React, custom drag-and-drop components (like `<div className="upload-zone">`) that handle file uploads are inherently inaccessible to keyboard users because they lack semantic meaning and keyboard event handlers. Just adding an `onClick` handler leaves out users navigating via Tab.
+**Action:** When implementing custom interactive `div` elements, always add `role="button"`, `tabIndex={0}`, and an `onKeyDown` handler (listening for `Enter` and ` `) to ensure parity with semantic `<button>` elements. Additionally, providing `:focus-visible` styles ensures focus states are explicitly clear.
