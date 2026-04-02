@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload, contains_eager
 from sqlalchemy import desc
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
@@ -88,6 +88,9 @@ async def get_surveyor_inbox(
     # Calculate Total
     total = query.count()
     
+    # Apply eager loading to avoid N+1 queries during iteration
+    query = query.options(selectinload(Claim.icve_estimates), joinedload(Claim.customer))
+
     # Fetch all for in-memory sorting (complex risk sorting)
     all_claims = query.all()
     
@@ -1058,6 +1061,9 @@ async def get_surveyor_overview(
         except ValueError:
             pass
     
+    # Apply eager loading to avoid N+1 queries during iteration
+    query = query.options(selectinload(Claim.icve_estimates), joinedload(Claim.customer), selectinload(Claim.state_transitions))
+
     # Get all claims for statistics
     all_claims = query.all()
     total = len(all_claims)
@@ -1211,10 +1217,10 @@ async def get_surveyor_reports(
     """
     from app.models.report import ReportDraft
     
-    # Base query - all reports
-    query = db.query(ReportDraft).join(ReportDraft.claim).options(
-        contains_eager(ReportDraft.claim).joinedload(Claim.customer),
-        contains_eager(ReportDraft.claim).selectinload(Claim.icve_estimates)
+    # Base query - all reports with eager loading
+    query = db.query(ReportDraft).join(Claim, ReportDraft.claim_id == Claim.id).options(
+        contains_eager(ReportDraft.claim).selectinload(Claim.icve_estimates),
+        contains_eager(ReportDraft.claim).joinedload(Claim.customer)
     )
     
     # Date range filtering

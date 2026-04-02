@@ -154,10 +154,7 @@ async def get_customer_dashboard(
     from datetime import datetime, timedelta
     
     # Query all customer's claims
-    # Eagerly load icve_estimates to prevent N+1 query problem when generating summaries
-    all_claims = db.query(Claim).options(
-        selectinload(Claim.icve_estimates)
-    ).filter(
+    all_claims = db.query(Claim).options(selectinload(Claim.icve_estimates)).filter(
         Claim.customer_id == str(current_user.id)
     ).order_by(Claim.created_at.desc()).all()
     
