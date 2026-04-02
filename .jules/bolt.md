@@ -1,3 +1,9 @@
+<<<<<<< bolt-fix-n-plus-1-surveyor-overview-654513510139288213
 ## 2024-03-29 - Eliminate N+1 Queries in Surveyor Overview
 **Learning:** In SQLAlchemy, iterating over a collection of objects and executing `db.query()` inside the loop for related entities (e.g., fetching a user for each claim's customer_id, or getting related ICVE estimates and state transitions) causes severe N+1 query performance bottlenecks.
 **Action:** Instead of inline loop queries, explicitly eager load relationships on the base query. Use `joinedload` for many-to-one/one-to-one relationships (like `customer`) and `selectinload` for one-to-many collections (like `icve_estimates` and `state_transitions`), then access these relationships as properties directly in python memory.
+=======
+## 2024-03-28 - N+1 Query Patterns and SQLAlchemy Eager Loading
+**Learning:** In endpoints rendering collections (like `inbox`, `overview`, `reports` in `surveyor.py`), using nested `db.query()` loops causes severe N+1 bottlenecks. When fetching models that have relationships needed for serialization (e.g., `Claim` needing `customer`, `icve_estimates`, `state_transitions`), SQLAlchemy's default lazy loading triggers an individual query for each item in the loop. Furthermore, for explicitly joined relations like `db.query(ReportDraft).join(ReportDraft.claim)`, using `joinedload` on `claim` executes a redundant secondary JOIN, which can impact performance.
+**Action:** Always prefetch related entities at the base query level using `joinedload` for single relationships (e.g. `customer`), `selectinload` for collections (e.g. `icve_estimates`, `state_transitions`), and `contains_eager` when the parent query already explicitly joins the relation. Iterate over the loaded Python lists or properties directly instead of re-querying inside loops.
+>>>>>>> main

@@ -67,11 +67,21 @@ async def get_surveyor_inbox(
     Includes SLA calculation (24 hour standard).
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
+    query = db.query(Claim).options(
+        joinedload(Claim.customer),
+        selectinload(Claim.icve_estimates)
+    )
     if status_filter:
-        query = db.query(Claim).filter(Claim.status == status_filter)
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(Claim.status == status_filter)
     else:
         # Default: show both new claims and claims in review
-        query = db.query(Claim).filter(
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(
             Claim.status.in_([ClaimStatus.DRAFT_READY, ClaimStatus.SURVEYOR_REVIEW])
         )
     
@@ -118,12 +128,8 @@ async def get_surveyor_inbox(
         else:
             sla_status = "ON_TRACK"
             
-        # Get customer name (mock/lazy)
-        customer_name = "Unknown"
-        if claim.customer_id:
-             user = db.query(User).filter(User.id == claim.customer_id).first()
-             if user:
-                 customer_name = user.full_name
+        # Get customer name
+        customer_name = claim.customer.full_name if claim.customer else "Unknown"
         
         # Get estimate total
         est_amount = 0.0
@@ -1089,7 +1095,7 @@ async def get_surveyor_overview(
         if claim.icve_estimates:
             est_amount = float(claim.icve_estimates[0].total_estimate)
         
-        # Get decision reason from last transition
+        # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
         if claim.state_transitions:
             last_transition = max(claim.state_transitions, key=lambda t: t.created_at)
@@ -1161,7 +1167,10 @@ async def get_surveyor_reports(
     from app.models.report import ReportDraft
     
     # Base query - all reports
-    query = db.query(ReportDraft).join(Claim, ReportDraft.claim_id == Claim.id)
+    query = db.query(ReportDraft).join(ReportDraft.claim).options(
+        contains_eager(ReportDraft.claim).joinedload(Claim.customer),
+        contains_eager(ReportDraft.claim).selectinload(Claim.icve_estimates)
+    )
     
     # Date range filtering
     if start_date:
@@ -1195,16 +1204,12 @@ async def get_surveyor_reports(
     # Process reports for response
     processed_reports = []
     for report in reports:
-        claim = db.query(Claim).filter(Claim.id == report.claim_id).first()
+        claim = report.claim
         if not claim:
             continue
         
         # Get customer name
-        customer_name = "Unknown"
-        if claim.customer_id:
-            user = db.query(User).filter(User.id == claim.customer_id).first()
-            if user:
-                customer_name = user.name or user.phone
+        customer_name = claim.customer.name or claim.customer.phone if claim.customer else "Unknown"
         
         # Get estimate total
         est_amount = 0.0
