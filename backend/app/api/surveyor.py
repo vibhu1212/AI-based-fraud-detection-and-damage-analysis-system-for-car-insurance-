@@ -67,6 +67,10 @@ async def get_surveyor_inbox(
     Includes SLA calculation (24 hour standard).
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
+    query = db.query(Claim).options(
+        joinedload(Claim.customer),
+        selectinload(Claim.icve_estimates)
+    )
     if status_filter:
         query = db.query(Claim).options(
             joinedload(Claim.customer),
@@ -124,7 +128,7 @@ async def get_surveyor_inbox(
         else:
             sla_status = "ON_TRACK"
             
-        # Get customer name (mock/lazy)
+        # Get customer name (optimized with eager loading)
         customer_name = "Unknown"
         if claim.customer:
              customer_name = claim.customer.full_name
@@ -1082,7 +1086,7 @@ async def get_surveyor_overview(
     # Process claims for response
     processed_claims = []
     for claim in paginated_claims:
-        # Get customer name
+        # Get customer name (optimized with eager loading)
         customer_name = "Unknown"
         if claim.customer:
             customer_name = claim.customer.name or claim.customer.phone
@@ -1092,13 +1096,13 @@ async def get_surveyor_overview(
         if claim.icve_estimates:
             est_amount = float(claim.icve_estimates[0].total_estimate)
         
-        # Get decision reason from last transition
+        # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
-        last_transition = db.query(ClaimStateTransition).filter(
-            ClaimStateTransition.claim_id == str(claim.id)
-        ).order_by(desc(ClaimStateTransition.created_at)).first()
-        if last_transition:
+        if claim.state_transitions:
+            # state_transitions is a list from backref, get the most recently created
+            last_transition = sorted(claim.state_transitions, key=lambda x: x.created_at, reverse=True)[0]
             decision_reason = last_transition.reason
+
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
             policy_id=claim.policy_id,
