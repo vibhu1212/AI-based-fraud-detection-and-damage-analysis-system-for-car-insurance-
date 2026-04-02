@@ -104,6 +104,14 @@ export default function ModuleTestPanel({ module }: Props) {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInput.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              fileInput.current?.click()
+            }
+          }}
         >
           <div className="upload-icon">📷</div>
           <h4>Drop images here or click to upload</h4>
@@ -124,6 +132,7 @@ export default function ModuleTestPanel({ module }: Props) {
               <div key={i} style={{ position: 'relative', display: 'inline-block' }}>
                 <img src={src} alt={`Upload ${i + 1}`} />
                 <button
+                  aria-label={`Remove image ${i + 1}`}
                   onClick={(e) => {
                     e.stopPropagation()
                     setImages(prev => prev.filter((_, idx) => idx !== i))
@@ -151,6 +160,7 @@ export default function ModuleTestPanel({ module }: Props) {
           className="btn btn-primary"
           onClick={processModule}
           disabled={images.length === 0 || isProcessing}
+          aria-busy={isProcessing}
         >
           {isProcessing ? (
             <><span className="loading-spinner" />Processing...</>
@@ -188,7 +198,7 @@ export default function ModuleTestPanel({ module }: Props) {
             <div className="results-header">
               <h4>
                 <span className="status-badge ready"><span className="status-dot" /> Success</span>
-                {module.id} · {r.filename as string} ({r.processing_time_ms as number}ms)
+                {module.id} · {String(r.filename)} ({String(r.processing_time_ms)}ms)
               </h4>
               <button
                 className="btn btn-secondary"
@@ -199,13 +209,13 @@ export default function ModuleTestPanel({ module }: Props) {
             </div>
 
             {/* PII comparison (M0 only) */}
-            {out?.redacted_image_b64 && (
+            {!!out?.redacted_image_b64 && (
               <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>🔒 PII Masking Result</span>
                   {out.pii_found
                     ? <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                        ⚠️ {out.faces_detected as number} face(s) · {out.plates_detected as number} plate(s) masked
+                        ⚠️ {String(out.faces_detected)} face(s) · {String(out.plates_detected)} plate(s) masked
                       </span>
                     : <span style={{ background: '#d1fae5', color: '#065f46', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                         ✅ No PII detected
@@ -220,7 +230,7 @@ export default function ModuleTestPanel({ module }: Props) {
                   <div>
                     <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Redacted (Gaussian Blur 99×99)</p>
                     <img
-                      src={`data:image/jpeg;base64,${out.redacted_image_b64 as string}`}
+                      src={`data:image/jpeg;base64,${String(out.redacted_image_b64)}`}
                       alt="Redacted"
                       style={{ width: '100%', borderRadius: 8, border: '2px solid #7c3aed' }}
                     />
@@ -240,7 +250,7 @@ export default function ModuleTestPanel({ module }: Props) {
                       <div className="metric-value">
                         {typeof value === 'number' && value < 1 && value > 0
                           ? `${(value * 100).toFixed(1)}%`
-                          : key.includes('time') || key.includes('ms') ? `${value}ms` : String(value)}
+                          : key.includes('time') || key.includes('ms') ? `${String(value)}ms` : String(value)}
                       </div>
                       <div className="metric-label">{key.replace(/_/g, ' ')}</div>
                     </div>

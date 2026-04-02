@@ -1,0 +1,4 @@
+## 2024-05-19 - Insecure OTP Generation
+**Vulnerability:** The application used `random.randint(100000, 999999)` to generate One-Time Passwords (OTPs) for user authentication and verification.
+**Learning:** Python's standard `random` module uses the Mersenne Twister algorithm, which is a Pseudo-Random Number Generator (PRNG) designed for modeling and simulation, not security or cryptography. Its state can be predicted if enough outputs are observed, making the generated OTPs theoretically predictable and vulnerable to attack.
+**Prevention:** Use the `secrets` module, which provides access to the most secure source of randomness that the operating system provides (e.g., `/dev/urandom` on Unix-like systems). Specifically, `secrets.randbelow()` or `secrets.SystemRandom().randint()` should be used for generating sensitive tokens or passwords.
