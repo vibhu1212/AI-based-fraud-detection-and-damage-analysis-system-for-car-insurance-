@@ -50,7 +50,66 @@ class StorageService:
         ]
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
+
+    def _get_secure_path(self, object_key: str) -> Optional[Path]:
+        """
+        Securely resolve and validate file paths to prevent Path Traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object if secure, None otherwise
+        """
+        try:
+            # Reject absolute path indicators early
+            if object_key.startswith('/') or object_key.startswith('\\') or ':\\' in object_key:
+                return None
+
+            # Resolve both paths to canonical absolute forms
+            resolved_storage = self.storage_path.resolve()
+            resolved_file = (self.storage_path / object_key).resolve()
+
+            # Ensure the resolved file path is within the storage directory
+            if not resolved_file.is_relative_to(resolved_storage):
+                return None
+
+            return resolved_file
+        except Exception:
+            return None
     
+    def _is_safe_path(self, path_str: str) -> bool:
+        """
+        Validate if the provided path is safe and prevents path traversal.
+
+        Args:
+            path_str: The path string to validate
+
+        Returns:
+            True if path is safe, raises ValueError otherwise
+        """
+        if not path_str:
+            raise ValueError("Path cannot be empty")
+
+        # Reject absolute paths and obvious traversal patterns early
+        if path_str.startswith("/") or path_str.startswith("\\") or ":" in path_str:
+            raise ValueError("Absolute paths are not allowed")
+
+        if ".." in path_str.split("/") or ".." in path_str.split("\\"):
+            raise ValueError("Directory traversal components ('..') are not allowed")
+
+        # Ensure the resolved path is within the storage path
+        try:
+            target_path = (self.storage_path / path_str).resolve()
+            base_path = self.storage_path.resolve()
+
+            if not target_path.is_relative_to(base_path):
+                raise ValueError("Path attempts to access outside of storage directory")
+        except Exception as e:
+            raise ValueError(f"Invalid path structure: {str(e)}")
+
+        return True
+
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
         Calculate SHA-256 hash of file content.
@@ -88,6 +147,29 @@ class StorageService:
         safe_filename = "".join(c for c in filename if c.isalnum() or c in "._-")
         return f"{folder}/{claim_id}/{timestamp}_{safe_filename}"
     
+    def _get_safe_path(self, object_key: str) -> Path:
+        """
+        Resolve path securely to prevent directory traversal.
+
+        Args:
+            object_key: Storage key/path
+
+        Returns:
+            Resolved Path object
+
+        Raises:
+            ValueError: If path traversal attempt detected
+        """
+        base_path = self.storage_path.resolve()
+        # Remove leading slashes to prevent absolute path interpretation
+        safe_key = object_key.lstrip('/')
+        file_path = (self.storage_path / safe_key).resolve()
+
+        if not file_path.is_relative_to(base_path):
+            raise ValueError("Path traversal attempt detected")
+
+        return file_path
+
     def upload_file(
         self,
         file: BinaryIO,
@@ -111,8 +193,6 @@ class StorageService:
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
-        # Determine full path
-        file_path = self.storage_path / object_key
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Write file
@@ -165,6 +245,8 @@ class StorageService:
         Returns:
             Presigned URL or local path
         """
+        self._is_safe_path(object_key)
+
         # For demo/local storage, return API endpoint path
         # In production with S3, this would generate actual presigned URL
         return f"/api/storage/{object_key}"
@@ -224,7 +306,7 @@ class StorageService:
         reports_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate file path
-        file_path = reports_dir / filename
+        file_path = self.storage_path / object_key
         
         # Write PDF file
         with open(file_path, "wb") as f:

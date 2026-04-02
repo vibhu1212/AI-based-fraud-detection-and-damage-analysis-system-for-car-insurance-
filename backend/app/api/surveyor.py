@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload, contains_eager
 from sqlalchemy import desc
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
@@ -67,17 +67,30 @@ async def get_surveyor_inbox(
     Includes SLA calculation (24 hour standard).
     """
     # Base query - show both DRAFT_READY and SURVEYOR_REVIEW claims
+    query = db.query(Claim).options(
+        joinedload(Claim.customer),
+        selectinload(Claim.icve_estimates)
+    )
     if status_filter:
-        query = db.query(Claim).filter(Claim.status == status_filter)
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(Claim.status == status_filter)
     else:
         # Default: show both new claims and claims in review
-        query = db.query(Claim).filter(
+        query = db.query(Claim).options(
+            joinedload(Claim.customer),
+            selectinload(Claim.icve_estimates)
+        ).filter(
             Claim.status.in_([ClaimStatus.DRAFT_READY, ClaimStatus.SURVEYOR_REVIEW])
         )
     
     # Calculate Total
     total = query.count()
     
+    # Apply eager loading to avoid N+1 queries during iteration
+    query = query.options(selectinload(Claim.icve_estimates), joinedload(Claim.customer))
+
     # Fetch all for in-memory sorting (complex risk sorting)
     all_claims = query.all()
     
@@ -105,6 +118,20 @@ async def get_surveyor_inbox(
     processed_claims = []
     now = datetime.utcnow()
     
+    # Bulk fetch Users
+    customer_ids = {c.customer_id for c in paginated_claims if c.customer_id}
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(customer_ids)).all()} if customer_ids else {}
+
+    # Bulk fetch latest ICVE estimates
+    claim_ids = [str(c.id) for c in paginated_claims]
+    icves = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id.in_(claim_ids)).order_by(desc(ICVEEstimate.created_at)).all() if claim_ids else []
+
+    # Keep only the latest ICVE per claim (since they are ordered descending)
+    latest_icves = {}
+    for icve in icves:
+        if str(icve.claim_id) not in latest_icves:
+            latest_icves[str(icve.claim_id)] = icve
+
     for claim in paginated_claims:
         # SLA Calculation (24 hours from submission)
         submission_time = claim.submitted_at or claim.created_at
@@ -118,17 +145,16 @@ async def get_surveyor_inbox(
         else:
             sla_status = "ON_TRACK"
             
-        # Get customer name (mock/lazy)
+        # Get customer name
         customer_name = "Unknown"
-        if claim.customer_id:
-             user = db.query(User).filter(User.id == claim.customer_id).first()
-             if user:
-                 customer_name = user.full_name
+        if claim.customer:
+             customer_name = claim.customer.full_name
         
         # Get estimate total
         est_amount = 0.0
-        if claim.icve_estimates:
-             est_amount = float(claim.icve_estimates[0].total_estimate)
+        latest_icve = latest_icves.get(str(claim.id))
+        if latest_icve:
+             est_amount = float(latest_icve.total_estimate)
         
         processed_claims.append(SurveyorClaimSummary(
             id=claim.id,
@@ -1004,7 +1030,11 @@ async def get_surveyor_overview(
     Calculates summary statistics.
     """
     # Base query - claims reviewed by this surveyor
-    query = db.query(Claim).filter(
+    query = db.query(Claim).options(
+        joinedload(Claim.customer),
+        selectinload(Claim.icve_estimates),
+        selectinload(Claim.state_transitions)
+    ).filter(
         Claim.reviewed_at.isnot(None)
     )
     
@@ -1031,6 +1061,9 @@ async def get_surveyor_overview(
         except ValueError:
             pass
     
+    # Apply eager loading to avoid N+1 queries during iteration
+    query = query.options(selectinload(Claim.icve_estimates), joinedload(Claim.customer), selectinload(Claim.state_transitions))
+
     # Get all claims for statistics
     all_claims = query.all()
     total = len(all_claims)
@@ -1074,26 +1107,51 @@ async def get_surveyor_overview(
     
     # Process claims for response
     processed_claims = []
+
+    # Bulk fetch Users
+    customer_ids = {c.customer_id for c in paginated_claims if c.customer_id}
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(customer_ids)).all()} if customer_ids else {}
+
+    # Bulk fetch latest ICVE estimates
+    claim_ids = [str(c.id) for c in paginated_claims]
+    icves = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id.in_(claim_ids)).order_by(desc(ICVEEstimate.created_at)).all() if claim_ids else []
+
+    # Keep only the latest ICVE per claim
+    latest_icves = {}
+    for icve in icves:
+        if str(icve.claim_id) not in latest_icves:
+            latest_icves[str(icve.claim_id)] = icve
+
+    # Bulk fetch latest ClaimStateTransitions
+    transitions = db.query(ClaimStateTransition).filter(
+        ClaimStateTransition.claim_id.in_(claim_ids)
+    ).order_by(desc(ClaimStateTransition.created_at)).all() if claim_ids else []
+
+    # Keep only the latest transition per claim
+    latest_transitions = {}
+    for transition in transitions:
+        if str(transition.claim_id) not in latest_transitions:
+            latest_transitions[str(transition.claim_id)] = transition
+
     for claim in paginated_claims:
         # Get customer name
         customer_name = "Unknown"
-        if claim.customer_id:
-            user = db.query(User).filter(User.id == claim.customer_id).first()
-            if user:
-                customer_name = user.name or user.phone
+        if claim.customer_id and claim.customer_id in users:
+            user = users[claim.customer_id]
+            customer_name = user.name or user.phone
         
         # Get estimate total
         est_amount = 0.0
-        if claim.icve_estimates:
-            est_amount = float(claim.icve_estimates[0].total_estimate)
+        latest_icve = latest_icves.get(str(claim.id))
+        if latest_icve:
+            est_amount = float(latest_icve.total_estimate)
         
-        # Get decision reason from last transition
+        # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
-        last_transition = db.query(ClaimStateTransition).filter(
-            ClaimStateTransition.claim_id == str(claim.id)
-        ).order_by(desc(ClaimStateTransition.created_at)).first()
+        last_transition = latest_transitions.get(str(claim.id))
         if last_transition:
             decision_reason = last_transition.reason
+
         processed_claims.append(OverviewClaimSummary(
             id=claim.id,
             policy_id=claim.policy_id,
@@ -1159,8 +1217,11 @@ async def get_surveyor_reports(
     """
     from app.models.report import ReportDraft
     
-    # Base query - all reports
-    query = db.query(ReportDraft).join(Claim, ReportDraft.claim_id == Claim.id)
+    # Base query - all reports with eager loading
+    query = db.query(ReportDraft).join(Claim, ReportDraft.claim_id == Claim.id).options(
+        contains_eager(ReportDraft.claim).selectinload(Claim.icve_estimates),
+        contains_eager(ReportDraft.claim).joinedload(Claim.customer)
+    )
     
     # Date range filtering
     if start_date:
@@ -1193,22 +1254,40 @@ async def get_surveyor_reports(
     
     # Process reports for response
     processed_reports = []
+
+    # Bulk fetch claims
+    claim_ids = {r.claim_id for r in reports}
+    claims = {str(c.id): c for c in db.query(Claim).filter(Claim.id.in_(claim_ids)).all()} if claim_ids else {}
+
+    # Bulk fetch users
+    customer_ids = {c.customer_id for c in claims.values() if c.customer_id}
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(customer_ids)).all()} if customer_ids else {}
+
+    # Bulk fetch ICVE estimates
+    icves = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id.in_(list(claims.keys()))).order_by(desc(ICVEEstimate.created_at)).all() if claims else []
+
+    # Keep only latest ICVE per claim
+    latest_icves = {}
+    for icve in icves:
+        if str(icve.claim_id) not in latest_icves:
+            latest_icves[str(icve.claim_id)] = icve
+
     for report in reports:
-        claim = db.query(Claim).filter(Claim.id == report.claim_id).first()
+        claim = claims.get(str(report.claim_id))
         if not claim:
             continue
         
         # Get customer name
         customer_name = "Unknown"
-        if claim.customer_id:
-            user = db.query(User).filter(User.id == claim.customer_id).first()
-            if user:
-                customer_name = user.name or user.phone
+        if claim.customer_id and claim.customer_id in users:
+            user = users[claim.customer_id]
+            customer_name = user.name or user.phone
         
         # Get estimate total
         est_amount = 0.0
-        if claim.icve_estimates:
-            est_amount = float(claim.icve_estimates[0].total_estimate)
+        latest_icve = latest_icves.get(str(claim.id))
+        if latest_icve:
+            est_amount = float(latest_icve.total_estimate)
         
         # Check if surveyor modified
         surveyor_modified = report.surveyor_version is not None
