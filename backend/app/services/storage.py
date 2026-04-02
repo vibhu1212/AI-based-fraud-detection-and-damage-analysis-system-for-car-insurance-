@@ -35,24 +35,29 @@ class StorageService:
 
     def _get_safe_path(self, object_key: str) -> Path:
         """
-        Safely resolve the file path and prevent path traversal.
+        Resolve path safely and prevent path traversal.
 
         Args:
-            object_key: Storage key/path
+            object_key: The requested path/key
 
         Returns:
-            Resolved Path object
+            Resolved safe Path
 
         Raises:
-            ValueError: If path traversal is detected
+            ValueError: If path is not relative to storage directory
         """
-        base_path = self.storage_path.resolve()
-        file_path = (self.storage_path / object_key).resolve()
+        # Clean leading slashes
+        clean_key = str(object_key).lstrip('/')
 
-        if not file_path.is_relative_to(base_path):
-            raise ValueError(f"Invalid path: Path traversal detected for {object_key}")
+        # Resolve full target path
+        target_path = (self.storage_path / clean_key).resolve()
 
-        return file_path
+        # Ensure path is within storage directory
+        if not target_path.is_relative_to(self.storage_path.resolve()):
+            raise ValueError("Invalid path: Path traversal detected")
+
+        return target_path
+
     
     def calculate_sha256(self, file: BinaryIO) -> str:
         """
@@ -111,7 +116,7 @@ class StorageService:
         # Calculate SHA-256 hash
         sha256_hash = self.calculate_sha256(file)
         
-        # Determine full path safely
+        # Determine full path
         file_path = self._get_safe_path(object_key)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
@@ -140,12 +145,9 @@ class StorageService:
         Returns:
             Path object if file exists, None otherwise
         """
-        try:
-            file_path = self._get_safe_path(object_key)
-            if file_path.exists():
-                return file_path
-        except ValueError:
-            pass
+        file_path = self._get_safe_path(object_key)
+        if file_path.exists():
+            return file_path
         return None
     
     def generate_presigned_url(
@@ -179,13 +181,10 @@ class StorageService:
         Returns:
             True if deleted, False if file doesn't exist
         """
-        try:
-            file_path = self._get_safe_path(object_key)
-            if file_path.exists():
-                file_path.unlink()
-                return True
-        except ValueError:
-            pass
+        file_path = self._get_safe_path(object_key)
+        if file_path.exists():
+            file_path.unlink()
+            return True
         return False
     
     def file_exists(self, object_key: str) -> bool:
@@ -198,11 +197,8 @@ class StorageService:
         Returns:
             True if file exists, False otherwise
         """
-        try:
-            file_path = self._get_safe_path(object_key)
-            return file_path.exists()
-        except ValueError:
-            return False
+        file_path = self._get_safe_path(object_key)
+        return file_path.exists()
     
     def store_pdf(self, pdf_bytes: bytes, filename: str) -> str:
         """
@@ -219,7 +215,7 @@ class StorageService:
         reports_dir = self.storage_path / "reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
         
-        # Generate file path safely
+        # Generate file path
         file_path = self._get_safe_path(f"reports/{filename}")
         
         # Write PDF file
