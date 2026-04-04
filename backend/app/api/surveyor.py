@@ -144,7 +144,7 @@ async def get_surveyor_inbox(
         # Get customer name
         customer_name = "Unknown"
         if claim.customer:
-             customer_name = claim.customer.full_name
+             customer_name = claim.customer.name or claim.customer.phone
         
         # Get estimate total
         est_amount = 0.0
@@ -1133,14 +1133,14 @@ async def get_surveyor_overview(
         
         # Get estimate total
         est_amount = 0.0
-        latest_icve = latest_icves.get(str(claim.id))
-        if latest_icve:
+        if claim.icve_estimates:
+            latest_icve = max(claim.icve_estimates, key=lambda e: e.created_at)
             est_amount = float(latest_icve.total_estimate)
         
         # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
-        last_transition = latest_transitions.get(str(claim.id))
-        if last_transition:
+        if claim.state_transitions:
+            last_transition = max(claim.state_transitions, key=lambda t: t.created_at)
             decision_reason = last_transition.reason
 
         processed_claims.append(OverviewClaimSummary(
@@ -1268,8 +1268,8 @@ async def get_surveyor_reports(
         
         # Get estimate total
         est_amount = 0.0
-        latest_icve = latest_icves.get(str(claim.id))
-        if latest_icve:
+        if claim.icve_estimates:
+            latest_icve = max(claim.icve_estimates, key=lambda e: e.created_at)
             est_amount = float(latest_icve.total_estimate)
         
         # Check if surveyor modified

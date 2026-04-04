@@ -1,3 +1,6 @@
 ## 2024-04-02 - N+1 query performance patterns
 **Learning:** When retrieving lists of models in SQLAlchemy, directly accessing un-loaded relationships on the instances causes separate database queries per instance, leading to an N+1 query issue.
 **Action:** Explicitly use `joinedload` for many-to-one or one-to-one relationships and `selectinload` for one-to-many relationships when building the initial query. When doing eager-load alongside an explicit `.join()`, remember to use `contains_eager()` instead of `joinedload()`.
+## 2024-04-18 - Use directly eager-loaded relationships instead of redundant bulk queries
+**Learning:** Even when correctly applying eager loading strategies like `joinedload` or `selectinload` in SQLAlchemy base queries, re-querying the same related models in bulk to build manual lookup dictionaries negates the performance benefits of eager loading, increases database load, and creates redundant code.
+**Action:** When a relationship is explicitly eager-loaded on a query, always access its related items directly via Python properties (e.g., `item.relationship`, `max(item.relationship)`) rather than running additional `.in_()` bulk queries for those related models.
