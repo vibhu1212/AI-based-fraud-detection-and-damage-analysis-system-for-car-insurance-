@@ -22,7 +22,12 @@ class AuthService:
     OTP_EXPIRY_SECONDS = 300  # 5 minutes
     OTP_RATE_LIMIT_WINDOW = 3600  # 1 hour
     OTP_RATE_LIMIT_MAX = 100  # Relaxed for testing (was 5)
+    OTP_VERIFY_RATE_LIMIT_WINDOW = 300  # 5 minutes
+    OTP_VERIFY_RATE_LIMIT_MAX = 5
     
+    OTP_VERIFY_LIMIT_WINDOW = 300  # 5 minutes, same as expiry
+    OTP_VERIFY_LIMIT_MAX = 5
+
     @staticmethod
     def generate_otp() -> str:
         """
@@ -47,6 +52,9 @@ class AuthService:
         """
         key = f"otp:{phone}"
         redis_client.setex(key, AuthService.OTP_EXPIRY_SECONDS, otp)
+        # Reset the verify rate limit counter when a new OTP is generated
+        verify_key = f"otp_verify_rate:{phone}"
+        redis_client.delete(verify_key)
         return True
     
     @staticmethod
@@ -67,6 +75,9 @@ class AuthService:
         if stored_otp and stored_otp == otp:
             # Delete OTP after successful verification
             redis_client.delete(key)
+            # Delete the verify rate limit counter after successful verification
+            verify_key = f"otp_verify_rate:{phone}"
+            redis_client.delete(verify_key)
             return True
         return False
     
@@ -96,7 +107,61 @@ class AuthService:
         # Increment counter
         redis_client.incr(key)
         return True
+
+    @staticmethod
+    def check_verify_rate_limit(phone: str) -> bool:
+        """
+        Check if phone number has exceeded OTP verification rate limit.
+
+        Args:
+            phone: Phone number
+
+        Returns:
+            True if within rate limit, False if exceeded
+        """
+        key = f"otp_verify_rate:{phone}"
+        count = redis_client.get(key)
+
+        if count is None:
+            # First request
+            redis_client.setex(key, AuthService.OTP_VERIFY_RATE_LIMIT_WINDOW, 1)
+            return True
+
+        count = int(count)
+        if count >= AuthService.OTP_VERIFY_RATE_LIMIT_MAX:
+            return False
+
+        # Increment counter
+        redis_client.incr(key)
+        return True
     
+    @staticmethod
+    def check_verify_rate_limit(phone: str) -> bool:
+        """
+        Check if phone number has exceeded OTP verify rate limit.
+
+        Args:
+            phone: Phone number
+
+        Returns:
+            True if within rate limit, False if exceeded
+        """
+        key = f"otp_verify_rate:{phone}"
+        count = redis_client.get(key)
+
+        if count is None:
+            # First verify attempt
+            redis_client.setex(key, AuthService.OTP_VERIFY_LIMIT_WINDOW, 1)
+            return True
+
+        count = int(count)
+        if count >= AuthService.OTP_VERIFY_LIMIT_MAX:
+            return False
+
+        # Increment counter
+        redis_client.incr(key)
+        return True
+
     @staticmethod
     def create_access_token(data: dict) -> str:
         """
