@@ -16,13 +16,6 @@ interface Props {
 const API_BASE = 'http://localhost:8000/api'
 
 export default function ModuleTestPanel({ module }: Props) {
-  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      action()
-    }
-  }
-
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
