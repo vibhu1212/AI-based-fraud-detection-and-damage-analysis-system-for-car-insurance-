@@ -36,12 +36,7 @@ function App() {
   }, [])
 
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      action()
-    }
-  }, [])
+
 
   const renderContent = () => {
     switch (currentView) {
@@ -123,8 +118,6 @@ function App() {
         </div>
         {MODULES.map(mod => (
           <div
-            role="button"
-            tabIndex={0}
             key={mod.id}
             role="button"
             tabIndex={0}

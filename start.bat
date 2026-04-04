@@ -47,7 +47,8 @@ REM ── Backend setup ──────────────────�
 echo [*] Setting up backend...
 
 set "BACKEND_DIR=%PROJECT_DIR%backend"
-set "VENV_DIR=%BACKEND_DIR%\venv"
+REM Use a short path for VENV to avoid Windows MAX_PATH (WinError 206) issues
+set "VENV_DIR=C:\insurai_backend_venv"
 
 REM Create virtual environment if it doesn't exist
 if not exist "%VENV_DIR%\Scripts\activate.bat" (
@@ -65,6 +66,15 @@ if not exist "%VENV_DIR%\.deps_installed" (
     echo. > "%VENV_DIR%\.deps_installed"
 ) else (
     echo   [OK] Python dependencies already installed
+)
+
+REM Ensure base AI models are downloaded
+if not exist "%BACKEND_DIR%\models\yolo11m.pt" (
+    echo   Downloading base AI models ^(this might take a minute^)...
+    cd /d "%BACKEND_DIR%"
+    python scripts\download_base_models.py
+) else (
+    echo   [OK] AI models found
 )
 
 REM Create .env if it doesn't exist
@@ -102,7 +112,7 @@ echo.
 
 REM Start backend in a new window
 echo   Starting backend on http://localhost:8000 ...
-start "InsurAI Backend" cmd /c "cd /d "%BACKEND_DIR%" && call "%VENV_DIR%\Scripts\activate.bat" && uvicorn app.main:app --reload --port 8000 --host 0.0.0.0"
+start "InsurAI Backend" cmd /k "cd /d "%BACKEND_DIR%" && call "%VENV_DIR%\Scripts\activate.bat" && uvicorn app.main:app --reload --reload-dir app --port 8000 --host 0.0.0.0"
 
 REM Wait for backend to start
 timeout /t 3 /nobreak >nul

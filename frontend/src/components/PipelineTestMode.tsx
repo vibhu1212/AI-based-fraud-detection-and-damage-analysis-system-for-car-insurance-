@@ -100,16 +100,12 @@ export default function PipelineTestMode({ modules }: Props) {
           {image && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{image.name}</span>}
         </div>
         <div
-          role="button"
-          tabIndex={0}
           aria-label="Upload image for pipeline"
           className="upload-zone"
           role="button"
           tabIndex={0}
           onClick={() => fileInput.current?.click()}
           style={{ padding: '20px', cursor: 'pointer' }}
-          role="button"
-          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();

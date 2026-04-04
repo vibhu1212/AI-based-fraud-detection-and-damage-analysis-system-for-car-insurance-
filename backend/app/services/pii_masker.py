@@ -24,7 +24,10 @@ def _get_person_model():
     global _person_model
     if _person_model is None:
         from ultralytics import YOLO
-        _person_model = YOLO(str(MODELS_DIR / "yolo11m.pt"))
+        model_path = MODELS_DIR / "yolo11m.pt"
+        if not model_path.exists():
+            raise FileNotFoundError("Person detection YOLO model not found.")
+        _person_model = YOLO(str(model_path))
     return _person_model
 
 
@@ -32,7 +35,10 @@ def _get_plate_model():
     global _plate_model
     if _plate_model is None:
         from ultralytics import YOLO
-        _plate_model = YOLO(str(MODELS_DIR / "yolo11m_plates.pt"))
+        model_path = MODELS_DIR / "yolo11m_plates.pt"
+        if not model_path.exists():
+            raise FileNotFoundError("Plate detection YOLO model not found.")
+        _plate_model = YOLO(str(model_path))
     return _plate_model
 
 

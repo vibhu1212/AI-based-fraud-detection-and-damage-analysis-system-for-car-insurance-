@@ -16,12 +16,6 @@ interface Props {
 const API_BASE = 'http://localhost:8000/api'
 
 export default function ModuleTestPanel({ module }: Props) {
-  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      action()
-    }
-  }
 
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
@@ -106,8 +100,6 @@ export default function ModuleTestPanel({ module }: Props) {
           )}
         </div>
         <div
-          role="button"
-          tabIndex={0}
           aria-label="Upload images drop zone"
           className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
           role="button"
@@ -116,8 +108,6 @@ export default function ModuleTestPanel({ module }: Props) {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInput.current?.click()}
-          role="button"
-          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -159,7 +149,6 @@ export default function ModuleTestPanel({ module }: Props) {
                     fontSize: 13, lineHeight: '22px', textAlign: 'center', padding: 0,
                   }}
                   title="Remove image"
-                  aria-label="Remove image"
                 >✕</button>
               </div>
             ))}
