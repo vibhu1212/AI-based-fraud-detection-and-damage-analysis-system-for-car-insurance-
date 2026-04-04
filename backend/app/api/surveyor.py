@@ -117,10 +117,6 @@ async def get_surveyor_inbox(
     # Process for Response
     processed_claims = []
     now = datetime.utcnow()
-    
-    # Bulk fetch Users
-    customer_ids = {c.customer_id for c in paginated_claims if c.customer_id}
-    users = {u.id: u for u in db.query(User).filter(User.id.in_(customer_ids)).all()} if customer_ids else {}
 
     # Bulk fetch latest ICVE estimates
     claim_ids = [str(c.id) for c in paginated_claims]
@@ -1108,6 +1104,27 @@ async def get_surveyor_overview(
     # Process claims for response
     processed_claims = []
 
+    # Bulk fetch latest ICVE estimates
+    claim_ids = [str(c.id) for c in paginated_claims]
+    icves = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id.in_(claim_ids)).order_by(desc(ICVEEstimate.created_at)).all() if claim_ids else []
+
+    # Keep only the latest ICVE per claim
+    latest_icves = {}
+    for icve in icves:
+        if str(icve.claim_id) not in latest_icves:
+            latest_icves[str(icve.claim_id)] = icve
+
+    # Bulk fetch latest ClaimStateTransitions
+    transitions = db.query(ClaimStateTransition).filter(
+        ClaimStateTransition.claim_id.in_(claim_ids)
+    ).order_by(desc(ClaimStateTransition.created_at)).all() if claim_ids else []
+
+    # Keep only the latest transition per claim
+    latest_transitions = {}
+    for transition in transitions:
+        if str(transition.claim_id) not in latest_transitions:
+            latest_transitions[str(transition.claim_id)] = transition
+
     for claim in paginated_claims:
         # Get customer name
         customer_name = "Unknown"
@@ -1228,6 +1245,16 @@ async def get_surveyor_reports(
     
     # Process reports for response
     processed_reports = []
+
+    # Bulk fetch ICVE estimates
+    claim_ids = [str(r.claim_id) for r in reports]
+    icves = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id.in_(claim_ids)).order_by(desc(ICVEEstimate.created_at)).all() if claim_ids else []
+
+    # Keep only latest ICVE per claim
+    latest_icves = {}
+    for icve in icves:
+        if str(icve.claim_id) not in latest_icves:
+            latest_icves[str(icve.claim_id)] = icve
 
     for report in reports:
         claim = report.claim
