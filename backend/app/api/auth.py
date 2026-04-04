@@ -131,11 +131,11 @@ async def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
     """
     Verify OTP and issue JWT tokens.
     """
-    # Check rate limiting for verification attempts
+    # Check verification rate limit
     if not auth_service.check_verify_rate_limit(request.phone):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many verification attempts. Please request a new OTP."
+            detail="Too many verification attempts. Please try again later."
         )
 
     # Verify OTP
