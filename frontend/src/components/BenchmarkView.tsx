@@ -89,16 +89,16 @@ export default function BenchmarkView() {
         </div>
         <div className="config-panel">
           <div className="config-group">
-            <label htmlFor="dataset">Dataset</label>
-            <select id="dataset" defaultValue="cardd">
+            <label htmlFor="dataset-select">Dataset</label>
+            <select id="dataset-select" defaultValue="cardd">
               <option value="cardd">CarDD + Custom (7 classes)</option>
               <option value="coco">COCO-Vehicles</option>
               <option value="custom">Custom Indian Only</option>
             </select>
           </div>
           <div className="config-group">
-            <label htmlFor="consensus-method">Consensus Method</label>
-            <select id="consensus-method" value={consensusMethod} onChange={e => setConsensusMethod(e.target.value)}>
+            <label htmlFor="consensus-method-select">Consensus Method</label>
+            <select id="consensus-method-select" value={consensusMethod} onChange={e => setConsensusMethod(e.target.value)}>
               <option value="ensemble">Ensemble (Weighted Avg)</option>
               <option value="sota_priority">SOTA Priority</option>
               <option value="scratch_priority">Scratch Priority</option>
@@ -106,12 +106,12 @@ export default function BenchmarkView() {
             </select>
           </div>
           <div className="config-group">
-            <label htmlFor="test-split">Test Split Size</label>
-            <input id="test-split" type="number" defaultValue={500} min={50} max={5000} />
+            <label htmlFor="test-split-size-input">Test Split Size</label>
+            <input id="test-split-size-input" type="number" defaultValue={500} min={50} max={5000} />
           </div>
           <div className="config-group">
-            <label htmlFor="distillation-temp">Distillation Temperature</label>
-            <input id="distillation-temp" type="number" defaultValue={3.0} step={0.5} min={1} max={10} />
+            <label htmlFor="distillation-temp-input">Distillation Temperature</label>
+            <input id="distillation-temp-input" type="number" defaultValue={3.0} step={0.5} min={1} max={10} />
           </div>
         </div>
       </div>
