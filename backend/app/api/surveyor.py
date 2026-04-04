@@ -109,16 +109,6 @@ async def get_surveyor_inbox(
     processed_claims = []
     now = datetime.utcnow()
 
-    # Bulk fetch latest ICVE estimates
-    claim_ids = [str(c.id) for c in paginated_claims]
-    icves = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id.in_(claim_ids)).order_by(desc(ICVEEstimate.created_at)).all() if claim_ids else []
-
-    # Keep only the latest ICVE per claim (since they are ordered descending)
-    latest_icves = {}
-    for icve in icves:
-        if str(icve.claim_id) not in latest_icves:
-            latest_icves[str(icve.claim_id)] = icve
-
     for claim in paginated_claims:
         # SLA Calculation (24 hours from submission)
         submission_time = claim.submitted_at or claim.created_at
@@ -139,8 +129,9 @@ async def get_surveyor_inbox(
         
         # Get estimate total
         est_amount = 0.0
-        latest_icve = latest_icves.get(str(claim.id))
-        if latest_icve:
+        if claim.icve_estimates:
+             # Sort in-memory if needed, though they usually come sorted or we just need the latest
+             latest_icve = sorted(claim.icve_estimates, key=lambda x: x.created_at, reverse=True)[0]
              est_amount = float(latest_icve.total_estimate)
         
         processed_claims.append(SurveyorClaimSummary(
@@ -1095,43 +1086,22 @@ async def get_surveyor_overview(
     # Process claims for response
     processed_claims = []
 
-    # Bulk fetch latest ICVE estimates
-    claim_ids = [str(c.id) for c in paginated_claims]
-    icves = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id.in_(claim_ids)).order_by(desc(ICVEEstimate.created_at)).all() if claim_ids else []
-
-    # Keep only the latest ICVE per claim
-    latest_icves = {}
-    for icve in icves:
-        if str(icve.claim_id) not in latest_icves:
-            latest_icves[str(icve.claim_id)] = icve
-
-    # Bulk fetch latest ClaimStateTransitions
-    transitions = db.query(ClaimStateTransition).filter(
-        ClaimStateTransition.claim_id.in_(claim_ids)
-    ).order_by(desc(ClaimStateTransition.created_at)).all() if claim_ids else []
-
-    # Keep only the latest transition per claim
-    latest_transitions = {}
-    for transition in transitions:
-        if str(transition.claim_id) not in latest_transitions:
-            latest_transitions[str(transition.claim_id)] = transition
-
     for claim in paginated_claims:
         # Get customer name
         customer_name = "Unknown"
         if claim.customer:
-            customer_name = claim.customer.name or claim.customer.phone
+            customer_name = claim.customer.full_name
         
         # Get estimate total
         est_amount = 0.0
         if claim.icve_estimates:
-            latest_icve = max(claim.icve_estimates, key=lambda e: e.created_at)
+            latest_icve = sorted(claim.icve_estimates, key=lambda x: x.created_at, reverse=True)[0]
             est_amount = float(latest_icve.total_estimate)
         
         # Get decision reason from last transition (optimized with eager loading)
         decision_reason = None
         if claim.state_transitions:
-            last_transition = max(claim.state_transitions, key=lambda t: t.created_at)
+            last_transition = sorted(claim.state_transitions, key=lambda x: x.created_at, reverse=True)[0]
             decision_reason = last_transition.reason
 
         processed_claims.append(OverviewClaimSummary(
@@ -1237,16 +1207,6 @@ async def get_surveyor_reports(
     # Process reports for response
     processed_reports = []
 
-    # Bulk fetch ICVE estimates
-    claim_ids = [str(r.claim_id) for r in reports]
-    icves = db.query(ICVEEstimate).filter(ICVEEstimate.claim_id.in_(claim_ids)).order_by(desc(ICVEEstimate.created_at)).all() if claim_ids else []
-
-    # Keep only latest ICVE per claim
-    latest_icves = {}
-    for icve in icves:
-        if str(icve.claim_id) not in latest_icves:
-            latest_icves[str(icve.claim_id)] = icve
-
     for report in reports:
         claim = report.claim
         if not claim:
@@ -1255,12 +1215,12 @@ async def get_surveyor_reports(
         # Get customer name
         customer_name = "Unknown"
         if claim.customer:
-            customer_name = claim.customer.name or claim.customer.phone
+            customer_name = claim.customer.full_name
         
         # Get estimate total
         est_amount = 0.0
         if claim.icve_estimates:
-            latest_icve = max(claim.icve_estimates, key=lambda e: e.created_at)
+            latest_icve = sorted(claim.icve_estimates, key=lambda x: x.created_at, reverse=True)[0]
             est_amount = float(latest_icve.total_estimate)
         
         # Check if surveyor modified
