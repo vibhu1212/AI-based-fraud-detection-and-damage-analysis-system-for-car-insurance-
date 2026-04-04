@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session, joinedload, selectinload, contains_eager
-from sqlalchemy import desc, asc, case
+from sqlalchemy import desc, case
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
 from app.models.base import get_db
@@ -88,22 +88,25 @@ async def get_surveyor_inbox(
     # Calculate Total
     total = query.count()
     
-    # Database level sorting: Risk (Desc), Submitted At (Asc - FIFO)
-    risk_order = case(
+    # Apply eager loading to avoid N+1 queries during iteration
+    query = query.options(selectinload(Claim.icve_estimates), joinedload(Claim.customer))
+
+    # Risk Score Mapping for SQL sorting
+    risk_score_case = case(
         (Claim.risk_level == RiskLevel.RED, 3),
         (Claim.risk_level == RiskLevel.AMBER, 2),
         (Claim.risk_level == RiskLevel.GREEN, 1),
         else_=0
     )
-    
-    # Apply ordering, pagination, and eager loading to avoid N+1 queries during iteration
-    paginated_claims = query.order_by(
-        desc(risk_order),
-        asc(Claim.submitted_at)
-    ).options(
-        selectinload(Claim.icve_estimates),
-        joinedload(Claim.customer)
-    ).offset((page - 1) * page_size).limit(page_size).all()
+
+    # Sort: Risk (Desc), Submitted At (Asc - FIFO)
+    query = query.order_by(
+        desc(risk_score_case),
+        Claim.submitted_at.asc()
+    )
+
+    # Pagination via SQL
+    paginated_claims = query.offset((page - 1) * page_size).limit(page_size).all()
     
     # Process for Response
     processed_claims = []
