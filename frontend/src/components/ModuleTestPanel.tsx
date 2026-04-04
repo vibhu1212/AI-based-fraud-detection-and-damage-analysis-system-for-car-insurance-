@@ -110,20 +110,11 @@ export default function ModuleTestPanel({ module }: Props) {
           tabIndex={0}
           aria-label="Upload images drop zone"
           className={`upload-zone ${dragOver ? 'drag-over' : ''}`}
-          role="button"
-          tabIndex={0}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInput.current?.click()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              fileInput.current?.click();
-            }
-          }}
+          onKeyDown={(e) => handleKeyDown(e, () => fileInput.current?.click())}
         >
           <div className="upload-icon">📷</div>
           <h4>Drop images here or click to upload</h4>
@@ -159,7 +150,6 @@ export default function ModuleTestPanel({ module }: Props) {
                     fontSize: 13, lineHeight: '22px', textAlign: 'center', padding: 0,
                   }}
                   title="Remove image"
-                  aria-label="Remove image"
                 >✕</button>
               </div>
             ))}
